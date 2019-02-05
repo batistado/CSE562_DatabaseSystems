@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.StringReader;
 
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
@@ -36,21 +35,25 @@ public class Main {
 		}
 
 	}
+
 	public static void printer(String tableName) {
-		String path = "data/"+tableName+".csv";
-		String line = "";
+		String path = "data/" + tableName + ".csv";
+		String line;
+		BufferedReader br = null;
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(path));
-				while ((line = br.readLine()) != null) {
-					 System.out.println(line);
-				 }
-				br.close();
-		} catch (Exception e) {
+			br = new BufferedReader(new FileReader(path));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			while ((line = br.readLine()) != null) {
+				System.out.println(line);
+			}
+			br.close();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
 	}
-
 }
