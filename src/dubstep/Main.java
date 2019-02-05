@@ -16,8 +16,7 @@ import net.sf.jsqlparser.statement.select.Select;
 public class Main {
 
 	public static void main(String[] args) {
-		StringReader input = new StringReader(args[0]);
-		CCJSqlParser parser = new CCJSqlParser(input);
+		CCJSqlParser parser = new CCJSqlParser(System.in);
 		try {
 			Statement queryStatement = parser.Statement();
 
