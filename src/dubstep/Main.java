@@ -32,6 +32,7 @@ public class Main {
 			}
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
+			System.out.println("Can't read query" + args[0]);
 			e.printStackTrace();
 		}
 
