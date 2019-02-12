@@ -4,29 +4,33 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.Select;
 
 public class Main {
+	private static Map<String, Table> tables = new HashMap<String, Table>();
 
 	public static void main(String[] args) {
-		CCJSqlParser parser = new CCJSqlParser(System.in);
+		CCJSqlParser parser;
+		System.out.println("$> ");
+		parser = new CCJSqlParser(System.in);
+		Statement queryStatement;
 		try {
-			Statement queryStatement = parser.Statement();
+			while ((queryStatement = parser.Statement()) != null) {
+				if (queryStatement instanceof Select) {
 
-			if (queryStatement instanceof Select) {
-				PlainSelect selectStatement = (PlainSelect) ((Select) queryStatement).getSelectBody();
-
-				if (selectStatement instanceof PlainSelect) {
-					Table tableName = (Table) selectStatement.getFromItem();
-					printer(tableName.getName());
+				} else if (queryStatement instanceof CreateTable) {
+					createTable((CreateTable) queryStatement);
 				}
-
+				System.out.println("$> ");
+				parser = new CCJSqlParser(System.in);
 			}
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
@@ -34,6 +38,12 @@ public class Main {
 			e.printStackTrace();
 		}
 
+	}
+	
+	public static void createTable(CreateTable table) {
+		if (!tables.containsKey(table.getTable().getName())) {
+			tables.put(table.getTable().getName(), table.getTable());
+		}
 	}
 
 	public static void printer(String tableName) {
