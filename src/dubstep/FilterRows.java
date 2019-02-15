@@ -10,16 +10,15 @@ import net.sf.jsqlparser.schema.Column;
 
 public class FilterRows {
 	
-	public static Boolean filterRow(ArrayList<PrimitiveValue> unfilteredRow, Expression expression){
+	public static Boolean filterRow(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, String tableName){
 		Eval eval = new Eval() {
 			@Override
 			public PrimitiveValue eval(Column col) throws SQLException {
 				// TODO Auto-generated method stub
-				Main main = new Main();
-				int colID = main.schema.get(col.getColumnName());
+				String fullColumnName = tableName + "." + col.getColumnName();
+				int colID = Main.tableSchemas.get(tableName).getSchemaByName(fullColumnName).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
-			
 		};
 		
 		try {

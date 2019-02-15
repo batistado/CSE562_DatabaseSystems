@@ -6,7 +6,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import net.sf.jsqlparser.expression.Expression;
@@ -14,6 +13,7 @@ import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
@@ -21,16 +21,15 @@ import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
 public class Main {
-	private static Expression exp;
 	private static final int BATCH_SIZE = 5;
 	private static Map<String, CreateTable> tables = new HashMap<String, CreateTable>();
-	static Map<String, Integer> schema = new HashMap<String, Integer>();
-	private static ArrayList<ArrayList<PrimitiveValue>> filteredRows;
+	static Map<String, TupleSchema> tableSchemas = new HashMap<>();
+	
+	
 	public static void main(String[] args) {
 		CCJSqlParser parser;
 		
@@ -39,20 +38,12 @@ public class Main {
 		Statement queryStatement;
 		try {
 			while ((queryStatement = parser.Statement()) != null) {
-				filteredRows = new ArrayList<ArrayList<PrimitiveValue>>();
 				if (queryStatement instanceof Select) {
-					Select q = (Select) queryStatement;
-					if(q.getSelectBody() instanceof PlainSelect) {
-						PlainSelect query = (PlainSelect) q.getSelectBody();
-						exp = query.getWhere();
-						System.out.println(exp.toString());
-						readCSV("r");
-						System.out.println(filteredRows);
-					}
+					Select selectQuery = (Select) queryStatement;
+					evaluateQuery(selectQuery);
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
-					createSchema((CreateTable) queryStatement);
 				}
 				System.out.println("$> ");
 				parser = new CCJSqlParser(System.in);
@@ -63,23 +54,7 @@ public class Main {
 		}
 	}
 	
-	
-	private static String[] typeOf(String tableName) {
-		String[] colType = null;
-		if(tables.containsKey(tableName)) {
-			CreateTable tmp = tables.get(tableName);
-			List<ColumnDefinition> columnNames = tmp.getColumnDefinitions();
-			colType = new String[columnNames.size()];
-			int i = 0;
-			for(ColumnDefinition x : columnNames) {
-				ColDataType colDataType =  x.getColDataType();
-				colType[i] = colDataType.getDataType();
-				i++;
-			}
-		}	
-		return colType;
-	}
-	private static boolean readBatch(BufferedReader reader, String[] colType) throws IOException{
+	private static boolean readBatch(BufferedReader reader, String tableName, Expression filter, ArrayList<ArrayList<PrimitiveValue>> filteredRows) throws IOException{
 		ArrayList<ArrayList<PrimitiveValue>> unfilteredRows = new ArrayList<ArrayList<PrimitiveValue>>();
 		for(int i = 0; i < BATCH_SIZE; i++) {
 			String line = reader.readLine();
@@ -88,22 +63,23 @@ public class Main {
 				int j = 0;
 				ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
 				for(String x : row) {
-					if(colType[j].equals("string") || colType[j].equals("varchar") || colType[j].equals("char")) {
+					String colDatatype = tableSchemas.get(tableName).getSchemaByIndex(j).getDataType();
+					if(colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
 						StringValue val = new StringValue(x);
 						tmp.add(val);
 						j++;
 					}
-					else if(colType[j].equals("int")){
+					else if(colDatatype.equals("int")){
 						LongValue val = new LongValue(x);
 						tmp.add(val);
 						j++;
 					}
-					else if(colType[j].equals("decimal")) {
+					else if(colDatatype.equals("decimal")) {
 						DoubleValue val = new DoubleValue(x);
 						tmp.add(val);
 						j++;
 					}
-					else if(colType[j].equals("date")){
+					else if(colDatatype.equals("date")){
 						DateValue val = new DateValue(x);
 						tmp.add(val);
 						j++;
@@ -116,34 +92,52 @@ public class Main {
 				return false;
 			}
 		}
-		for(ArrayList<PrimitiveValue> row : unfilteredRows) {
-			if(FilterRows.filterRow(row,exp)) {
-				filteredRows.add(row);
+		
+		if (filter != null) {
+			for(ArrayList<PrimitiveValue> row : unfilteredRows) {
+				if(FilterRows.filterRow(row, filter, tableName)) {
+					filteredRows.add(row);
+				}
 			}
+		} else {
+			filteredRows.addAll(unfilteredRows);
 		}
+		
+		
 		return true;
 	}
 	
 	
-	private static void readCSV(String tableName) {
-		String[] colType = typeOf(tableName);
-		String path = "/Users/Kamran/Desktop/data/"+tableName+".csv";
+	private static ArrayList<ArrayList<PrimitiveValue>> readRowsFromTable(String tableName, Expression filter) {
+		ArrayList<ArrayList<PrimitiveValue>> filteredRows = new ArrayList<ArrayList<PrimitiveValue>>();
+		String path = "/Users/msyed3/Desktop/data/"+tableName+".csv";
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(path));
 			boolean flag = true;
 			while(flag) {
-				flag = readBatch(br, colType);	
+				flag = readBatch(br, tableName, filter, filteredRows);	
 			}
+			br.close();
 		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
 		
+		return filteredRows;
 	}
 		
 	public static void createTable(CreateTable table) {
 		if (!tables.containsKey(table.getTable().getName())) {
 			tables.put(table.getTable().getName(), table);
+		}
+		if (!tableSchemas.containsKey(table.getTable().getName())) {
+			TupleSchema ts = new TupleSchema();
+			Integer i = 0;
+			for (ColumnDefinition columnDefinition : table.getColumnDefinitions()) {
+				ts.addTuple(table.getTable().getName() + "." + columnDefinition.getColumnName(), i, columnDefinition.getColDataType().getDataType());
+				i++;
+			}
+			tableSchemas.put(table.getTable().getName(), ts);
 		}
 	}
 	
@@ -157,16 +151,15 @@ public class Main {
 			// Add further steps to process and return rows
 			evaluateQuery((Select) fromItem);
 		} else {
-			evaluateSinglePlainSelect(plainSelectQuery);
+			evaluateFromTable(plainSelectQuery);
 		}
 	}
 	
-	public static void evaluateSinglePlainSelect(PlainSelect plainSelect) {
+	public static void evaluateFromTable(PlainSelect plainSelect) {
 		Expression where = plainSelect.getWhere();
-		
-		if (where != null) {
-			//filter(where, (Table)plainSelect.getFromItem());
-		}
+		Table fromTable = (Table) plainSelect.getFromItem();
+		ArrayList<ArrayList<PrimitiveValue>> filteredRows = readRowsFromTable(fromTable.getName(), where);
+		System.out.println(filteredRows.toString());
 	}
 	
 	public static void evaluateQuery(Select selectQuery) {
@@ -177,14 +170,6 @@ public class Main {
 		}
 	}
 	
-	private static void createSchema(CreateTable queryStatement) {
-		Integer j = 0;
-		List<ColumnDefinition> q = queryStatement.getColumnDefinitions();
-		for(ColumnDefinition c : q) {
-			schema.put(c.getColumnName(), j);
-			j++;
-		}
-	}
 	public static void printer(String tableName) {
 		String path = "/Users/Kamran/data/" + tableName + ".csv";
 		String line;
