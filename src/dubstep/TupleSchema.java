@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TupleSchema {
-	private static Map<String, Schema> schemaByColumnName = new HashMap<String, Schema>();
-	private static Map<Integer, Schema> schemaByColumnIndex = new HashMap<Integer, Schema>();
+	private Map<String, Schema> schemaByColumnName = new HashMap<String, Schema>();
+	private Map<Integer, Schema> schemaByColumnIndex = new HashMap<Integer, Schema>();
 	
 	public void addTuple(String colName, Integer index, String dataType) {
 		Schema schema = new Schema(dataType, index, colName);
@@ -29,5 +29,13 @@ public class TupleSchema {
 		}
 		
 		return null;
+	}
+	
+	public Map<String, Schema> schemaByName() {
+		return schemaByColumnName;
+	}
+	
+	public Map<Integer, Schema> schemaByIndex() {
+		return schemaByColumnIndex;
 	}
 }

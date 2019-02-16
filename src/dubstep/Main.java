@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.sf.jsqlparser.expression.Expression;
@@ -18,6 +19,7 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -143,6 +145,9 @@ public class Main {
 	
 	public static void evaluatePlainSelect(PlainSelect plainSelectQuery) {
 		FromItem fromItem = plainSelectQuery.getFromItem();
+		System.out.println(fromItem.toString());
+		System.out.println(plainSelectQuery.getJoins().toString());
+		
 		if (fromItem == null) {
 			// Implement expression evaluation
 			return;
@@ -151,13 +156,125 @@ public class Main {
 			// Add further steps to process and return rows
 			evaluateQuery((Select) fromItem);
 		} else {
-			evaluateFromTable(plainSelectQuery);
+			evaluateFromTables(plainSelectQuery);
 		}
 	}
 	
-	public static void evaluateFromTable(PlainSelect plainSelect) {
+	public static void evaluateFromTables(PlainSelect plainSelect) {
 		Expression where = plainSelect.getWhere();
 		Table fromTable = (Table) plainSelect.getFromItem();
+		List<Join> joins = plainSelect.getJoins();
+		if (joins.isEmpty()) {
+			evaluateFromTable(fromTable, where);
+		} else {
+			ArrayList<ArrayList<PrimitiveValue>> result = evaluateJoins(fromTable, joins, where);
+			System.out.println(result.toString());
+		}
+	}
+	
+	public static ArrayList<ArrayList<PrimitiveValue>> filterResults(ArrayList<ArrayList<PrimitiveValue>> unfilteredRows, Expression filter, String tableName) {
+		ArrayList<ArrayList<PrimitiveValue>> filteredRows = new ArrayList<ArrayList<PrimitiveValue>>();
+		if (filter != null) {
+			for(ArrayList<PrimitiveValue> row : unfilteredRows) {
+				if(FilterRows.filterRowForJoin(row, filter, tableName)) {
+					filteredRows.add(row);
+				}
+			}
+		} else {
+			filteredRows.addAll(unfilteredRows);
+		}
+		
+		return filteredRows;
+	}
+	
+	public static ArrayList<ArrayList<PrimitiveValue>> evaluateJoins(Table fromTable, List<Join> joins, Expression filter) {
+		ArrayList<ArrayList<PrimitiveValue>> result = readRowsFromTable(fromTable.getName(), null);
+		String joinName = fromTable.getName();
+		for (Join join: joins) {
+			Table rightTable = (Table) join.getRightItem();
+			ArrayList<ArrayList<PrimitiveValue>> rightResult = readRowsFromTable(rightTable.getName(), null);
+			joinName = crossJoin(result, rightResult, joinName, rightTable.getName(), join.getOnExpression());
+		}
+		
+		return filterResults(result, filter, joinName);
+	}
+	
+	public static String crossJoin(ArrayList<ArrayList<PrimitiveValue>> leftRows, ArrayList<ArrayList<PrimitiveValue>> rightRows, String leftTableName, String rightTableName, Expression joinExpression) {
+		ArrayList<ArrayList<PrimitiveValue>> result = new ArrayList<ArrayList<PrimitiveValue>>();
+		for (ArrayList<PrimitiveValue> leftRow : leftRows) {
+			for (ArrayList<PrimitiveValue> rightRow : rightRows) {
+				ArrayList<PrimitiveValue> tmpRow = new ArrayList<>();
+				tmpRow.addAll(leftRow);
+				tmpRow.addAll(rightRow);
+				result.add(tmpRow);
+			}
+		}
+		
+		String joinName = mergeSchemas(leftTableName, rightTableName);
+		
+		if (joinExpression != null) {
+			result = filterResults(result, joinExpression, joinName);
+		}
+		
+		leftRows.clear();
+		leftRows.addAll(result);
+		
+		return joinName;
+	}
+	
+	public static String getColumnName(String joinName, String name) {
+		int count = 0, begIndex = 0;
+		for (int i=0; i < name.length(); i++) {
+			if (name.charAt(i) == '.')
+				count++;
+			
+			if (count == 1) {
+				begIndex = i;
+			}
+			
+			if (count > 1)
+				break;
+		}
+		
+		if (count > 1) {
+			return joinName + "." + name.substring(begIndex);
+		}
+		
+		return joinName + "." + name;
+	}
+	
+	public static String mergeSchemas(String leftTableName, String rightTableName) {
+		String joinName = leftTableName + 'X' + rightTableName;
+		if (!tableSchemas.containsKey(joinName)) {
+			TupleSchema ts = new TupleSchema();
+			Map<String, Schema> schemaByName = tableSchemas.get(leftTableName).schemaByName();
+			
+			Integer maxIndex = -1;
+			for (String name: schemaByName.keySet()) {
+				String colName = getColumnName(joinName, name);
+				Schema s = tableSchemas.get(leftTableName).getSchemaByName(name);
+				ts.addTuple(colName, s.getColumnIndex(), s.getDataType());
+				
+				if (s.getColumnIndex() > maxIndex) {
+					maxIndex = s.getColumnIndex();
+				}
+			}
+			
+			schemaByName = tableSchemas.get(rightTableName).schemaByName();
+			
+			for (String name: schemaByName.keySet()) {
+				String colName = getColumnName(joinName, name);
+				Schema s = tableSchemas.get(rightTableName).getSchemaByName(name);
+				ts.addTuple(colName, s.getColumnIndex() + maxIndex + 1, s.getDataType());
+			}
+			
+			tableSchemas.put(joinName, ts);
+		}
+		
+		return joinName;
+	}
+	
+	public static void evaluateFromTable(Table fromTable, Expression where) {
 		ArrayList<ArrayList<PrimitiveValue>> filteredRows = readRowsFromTable(fromTable.getName(), where);
 		System.out.println(filteredRows.toString());
 	}
