@@ -15,15 +15,15 @@ public class FilterRows {
 			@Override
 			public PrimitiveValue eval(Column col) throws SQLException {
 				// TODO Auto-generated method stub
-				String fullColumnName = tableName + "." + col.getColumnName();
+				String columnTableName = col.getTable().getName();
+				String fullColumnName = columnTableName.equals(tableName) ? tableName + "." + col.getColumnName() : tableName + "." + columnTableName + "." + col.getColumnName();
 				int colID = Main.tableSchemas.get(tableName).getSchemaByName(fullColumnName).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
 		};
 		
 		try {
-			PrimitiveValue v = eval.eval(expression);
-			return v.toBool();
+			return eval.eval(expression).toBool();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -32,22 +32,20 @@ public class FilterRows {
 		
 	}
 	
-	public static Boolean filterRowForJoin(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, String tableName){
+	public static PrimitiveValue filterRowForProjection(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, String tableName){
 		Eval eval = new Eval() {
 			@Override
 			public PrimitiveValue eval(Column col) throws SQLException {
 				// TODO Auto-generated method stub
-				
-				String fullColumnName = tableName + "." + col.getTable().getName() + "." + col.getColumnName();
-				TupleSchema s = Main.tableSchemas.get(tableName);
-				int colID = s.getSchemaByName(fullColumnName).getColumnIndex();
+				String columnTableName = col.getTable().getName();
+				String fullColumnName = columnTableName.equals(tableName) ? tableName + "." + col.getColumnName() : tableName + "." + columnTableName + "." + col.getColumnName();
+				int colID = Main.tableSchemas.get(tableName).getSchemaByName(fullColumnName).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
 		};
 		
 		try {
-			PrimitiveValue v = eval.eval(expression);
-			return v.toBool();
+			return eval.eval(expression);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -55,5 +53,4 @@ public class FilterRows {
 		}
 		
 	}
-
 }
