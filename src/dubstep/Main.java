@@ -14,6 +14,7 @@ import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
@@ -29,6 +30,7 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.select.Union;
 
 public class Main {
 	private static final int BATCH_SIZE = 5;
@@ -139,7 +141,7 @@ public class Main {
 	
 	private static ArrayList<ArrayList<PrimitiveValue>> readRowsFromTable(Table table, Expression filter) {
 		ArrayList<ArrayList<PrimitiveValue>> filteredRows = new ArrayList<ArrayList<PrimitiveValue>>();
-		String path = "/Users/msyed3/Desktop/data/" + table.getName() + ".csv";
+		String path = "/Users/msyed3/Downloads/sample queries/NBA_Examples/" + table.getName() + ".dat";
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(path));
@@ -177,13 +179,44 @@ public class Main {
 		for (ArrayList<PrimitiveValue> row: rows) {
 			ArrayList<PrimitiveValue> resultRow = new ArrayList<PrimitiveValue>();
 			for (SelectItem selectItem: selectItems) {
-				Expression expression = ((SelectExpressionItem) selectItem).getExpression();
-				resultRow.add(FilterRows.filterRowForProjection(row, expression, currentTableName));
+					SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
+					resultRow.add(FilterRows.filterRowForProjection(row, selectExpressionItem.getExpression(), currentTableName));
 			}
 			resultRows.add(resultRow);
 		}
 		
+		String projectionTableName = "Projection." + currentTableName;
+
+		// Update column numbers
+		Integer columnNumber = 0;
+		for (SelectItem selectItem: selectItems) {
+				SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
+				Expression expression = selectExpressionItem.getExpression();
+				Column column = (Column) expression;
+				addColumnAlias(column.getWholeColumnName(), selectExpressionItem.getAlias(), columnNumber, projectionTableName);
+				columnNumber++;
+		}
+		
+		currentTableName = projectionTableName;
+		
 		return resultRows;
+	}
+	
+	public static void addColumnAlias(String columnName, String aliasName, Integer columnNumber, String projectionTableName) {		
+		TupleSchema ts = tableSchemas.containsKey(projectionTableName) ? tableSchemas.get(projectionTableName) : new TupleSchema();
+		
+		String fullColumnName = columnName.startsWith(currentTableName) ? columnName : currentTableName + "." + columnName;
+		Schema s = tableSchemas.get(currentTableName).getSchemaByName(fullColumnName);
+		
+		if (aliasName != null) {
+			String colName = projectionTableName + "." + aliasName;
+			ts.addTuple(colName, columnNumber, s.getDataType());
+		} else {
+			String colName = projectionTableName + "." + columnName;
+			ts.addTuple(colName, columnNumber, s.getDataType());
+		}
+		
+		tableSchemas.put(projectionTableName, ts);
 	}
 	
 	public static ArrayList<ArrayList<PrimitiveValue>> evaluatePlainSelect(PlainSelect plainSelectQuery) {
@@ -206,8 +239,24 @@ public class Main {
 			return evaluatePlainSelect((PlainSelect)subQuery.getSelectBody());
 		} else {
 			// Write Union logic
+			return evaluateUnion((Union) subQuery.getSelectBody());
+		}
+	}
+	
+	public static ArrayList<ArrayList<PrimitiveValue>> evaluateUnion(Union union){
+		// Reverse the logic for union and union all
+		if (union.isAll()) {
+			// union all logic
 			return null;
 		}
+		
+		ArrayList<ArrayList<PrimitiveValue>> result = new ArrayList<>();
+		
+		for (PlainSelect plainSelect : union.getPlainSelects()) {
+			result.addAll(evaluatePlainSelect(plainSelect));
+		}
+		
+		return result;
 	}
 	
 	public static ArrayList<ArrayList<PrimitiveValue>> evaluateFromTables(PlainSelect plainSelect) {
@@ -335,8 +384,7 @@ public class Main {
 		if (selectQuery.getSelectBody() instanceof PlainSelect) {
 			return evaluatePlainSelect((PlainSelect)selectQuery.getSelectBody());
 		} else {
-			// Write Union logic
-			return null;
+			return evaluateUnion((Union) selectQuery.getSelectBody());
 		}
 	}
 	

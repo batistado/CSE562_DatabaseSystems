@@ -15,6 +15,12 @@ public class TupleSchema {
 			schemaByColumnIndex.put(index, schema);
 	}
 	
+	public void updateTuple(String colName, Integer index, String dataType) {
+		Schema schema = new Schema(dataType, index, colName);
+		schemaByColumnName.put(colName, schema);
+		schemaByColumnIndex.put(index, schema);
+	}
+	
 	public Schema getSchemaByName(String colName) {
 		if (schemaByColumnName.containsKey(colName)) {
 			return schemaByColumnName.get(colName);

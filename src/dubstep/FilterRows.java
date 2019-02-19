@@ -16,7 +16,16 @@ public class FilterRows {
 			public PrimitiveValue eval(Column col) throws SQLException {
 				// TODO Auto-generated method stub
 				String columnTableName = col.getTable().getName();
-				String fullColumnName = columnTableName.equals(tableName) ? tableName + "." + col.getColumnName() : tableName + "." + columnTableName + "." + col.getColumnName();
+				String fullColumnName;
+				
+				if (columnTableName == null) {
+					// Case for simple queries where the dot convention is not required
+					fullColumnName = tableName + "." + col.getColumnName();
+				} else {
+					// Case for full schema dot convention and joins
+					fullColumnName = columnTableName.equals(tableName) ? tableName + "." + col.getColumnName() : tableName + "." + columnTableName + "." + col.getColumnName();
+				}
+				
 				int colID = Main.tableSchemas.get(tableName).getSchemaByName(fullColumnName).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
@@ -38,7 +47,17 @@ public class FilterRows {
 			public PrimitiveValue eval(Column col) throws SQLException {
 				// TODO Auto-generated method stub
 				String columnTableName = col.getTable().getName();
-				String fullColumnName = columnTableName.equals(tableName) ? tableName + "." + col.getColumnName() : tableName + "." + columnTableName + "." + col.getColumnName();
+				
+				String fullColumnName;
+				
+				if (columnTableName == null) {
+					// Case for simple queries where the dot convention is not required
+					fullColumnName = tableName + "." + col.getColumnName();
+				} else {
+					// Case for full schema dot convention and joins
+					fullColumnName = columnTableName.equals(tableName) ? tableName + "." + col.getColumnName() : tableName + "." + columnTableName + "." + col.getColumnName();
+				}
+				
 				int colID = Main.tableSchemas.get(tableName).getSchemaByName(fullColumnName).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
