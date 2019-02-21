@@ -9,10 +9,8 @@ public class TupleSchema {
 	
 	public void addTuple(String colName, Integer index, String dataType) {
 		Schema schema = new Schema(dataType, index, colName);
-		if (!schemaByColumnName.containsKey(colName))
-			schemaByColumnName.put(colName, schema);
-		if (!schemaByColumnIndex.containsKey(index))
-			schemaByColumnIndex.put(index, schema);
+		schemaByColumnName.put(colName, schema);
+		schemaByColumnIndex.put(index, schema);
 	}
 	
 	public void updateTuple(String colName, Integer index, String dataType) {
