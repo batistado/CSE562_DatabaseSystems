@@ -9,6 +9,7 @@ import Iterators.FromIterator;
 import Iterators.RAIterator;
 import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
+import Models.TupleSchema;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
@@ -124,7 +125,7 @@ public class Main {
 		RAIterator iterator = new FromIterator(fromTable, filter, null);
 		for (Join join: joins) {
 			Table rightTable = (Table) join.getRightItem();
-			iterator = new FromIterator(iterator, rightTable, filter, null);
+			iterator = new FromIterator(iterator, rightTable, filter, join.getOnExpression(), null);
 		}
 		
 		iterator.addSelectItems(selectItems);

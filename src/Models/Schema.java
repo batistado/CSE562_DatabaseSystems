@@ -1,4 +1,4 @@
-package dubstep;
+package Models;
 
 public class Schema {
 	private Integer columnIndex;

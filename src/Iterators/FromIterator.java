@@ -6,11 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import Models.Schema;
+import Models.TupleSchema;
 import Utils.utils;
-import dubstep.FilterRows;
 import dubstep.Main;
-import dubstep.Schema;
-import dubstep.TupleSchema;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
@@ -31,6 +30,7 @@ public class FromIterator implements RAIterator{
 	private String line;
 	private Table table;
 	private Expression where;
+	private Expression joinOn;
 	private TupleSchema fromSchema;
 	private TupleSchema selectSchema;
 	private List<SelectItem> selectItems;
@@ -43,11 +43,12 @@ public class FromIterator implements RAIterator{
 		setIteratorSchema();
 	}
 	
-	public FromIterator (RAIterator leftIterator, Table table, Expression where, List<SelectItem> selectItems) {
+	public FromIterator (RAIterator leftIterator, Table table, Expression where, Expression joinOn, List<SelectItem> selectItems) {
 		this.leftIterator = leftIterator;
 		this.table = table;
 		this.where = where;
 		this.selectItems = selectItems;
+		this.joinOn = joinOn;
 		this.leftIterator.resetWhere();
 		this.leftIterator.resetProjection();
 		initializeReader();
@@ -124,9 +125,20 @@ public class FromIterator implements RAIterator{
 					tmp.addAll(leftIterator.next());
 					tmp.addAll(row);
 					
-					if (where == null || utils.filterRow(tmp, where, fromSchema)) {
+					if (where == null && joinOn == null) {
 						row = tmp;
 						return true;
+					} else if (where != null && joinOn != null) {
+						if (utils.filterRow(tmp, where, fromSchema) && utils.filterRow(tmp, joinOn, fromSchema)) {
+							row = tmp;
+							return true;
+						}	
+					} else {
+						Expression filter = where == null ? joinOn : where;
+						if (utils.filterRow(tmp, filter, fromSchema)) {
+							row = tmp;
+							return true;
+						}
 					}
 				} while (leftIterator.hasNext());
 				

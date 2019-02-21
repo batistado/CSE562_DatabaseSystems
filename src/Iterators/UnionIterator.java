@@ -3,7 +3,7 @@ package Iterators;
 import java.util.ArrayList;
 import java.util.List;
 
-import dubstep.TupleSchema;
+import Models.TupleSchema;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.statement.select.SelectItem;
 

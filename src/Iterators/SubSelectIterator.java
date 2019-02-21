@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import Models.Schema;
+import Models.TupleSchema;
 import Utils.utils;
-import dubstep.Schema;
-import dubstep.TupleSchema;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
