@@ -23,7 +23,7 @@ import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
-public class FromIterator implements RAIterator{
+public class PlainSelectIterator implements RAIterator{
 	private RAIterator leftIterator = null;
 	private BufferedReader reader;
 	private ArrayList<PrimitiveValue> row;
@@ -35,7 +35,7 @@ public class FromIterator implements RAIterator{
 	private TupleSchema selectSchema;
 	private List<SelectItem> selectItems;
 	
-	public FromIterator (Table table, Expression where, List<SelectItem> selectItems) {
+	public PlainSelectIterator (Table table, Expression where, List<SelectItem> selectItems) {
 		this.table = table;
 		this.where = where;
 		this.selectItems = selectItems;
@@ -43,7 +43,7 @@ public class FromIterator implements RAIterator{
 		setIteratorSchema();
 	}
 	
-	public FromIterator (RAIterator leftIterator, Table table, Expression where, Expression joinOn, List<SelectItem> selectItems) {
+	public PlainSelectIterator (RAIterator leftIterator, Table table, Expression where, Expression joinOn, List<SelectItem> selectItems) {
 		this.leftIterator = leftIterator;
 		this.table = table;
 		this.where = where;
@@ -255,6 +255,11 @@ public class FromIterator implements RAIterator{
 			}
 		}
 		
+		if (!aliasedTableName.equals(table.getName())) {
+			// Add aliased schema to main tables schema. Helps for All Table Columns
+			Main.tableSchemas.put(aliasedTableName, fromSchema);
+		}
+		
 		addSelectSchema();
 	}
 	
@@ -269,6 +274,11 @@ public class FromIterator implements RAIterator{
 		// Add aliased columns
 		Integer columnNumber = 0;
 		for (SelectItem selectItem: selectItems) {
+				if (selectItem instanceof AllTableColumns) {
+					columnNumber = addAllTableColumnSchema((AllTableColumns) selectItem, columnNumber);
+					continue;
+				}
+			
 				SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
 				Expression expression = selectExpressionItem.getExpression();
 				Column column = (Column) expression;
@@ -280,6 +290,23 @@ public class FromIterator implements RAIterator{
 		}
 	}
 	
+	public Integer addAllTableColumnSchema(AllTableColumns allTableColumns, Integer columnNumber) {
+		Table table = allTableColumns.getTable();
+		String aliasedTableName = utils.getTableName(table);
+		
+		Map<String, Schema> schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
+		
+		for (String name: schemaByName.keySet()) {
+			// Since default columns are referenced as X.A
+			String colName = !aliasedTableName.equals(table.getName()) ? aliasedTableName + "." + name.substring(name.lastIndexOf('.') + 1) : name;
+			Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(name);
+			selectSchema.addTuple(colName, s.getColumnIndex(), s.getDataType());
+			columnNumber++;
+		}
+		
+		return columnNumber;
+	}
+	
 	public ArrayList<PrimitiveValue> projectedRow() {
 		if (selectItems == null || selectItems.isEmpty() || selectItems.get(0) instanceof AllColumns) {
 			return row;
@@ -288,6 +315,11 @@ public class FromIterator implements RAIterator{
 		ArrayList<PrimitiveValue> resultRow = new ArrayList<>();
 		
 		for (SelectItem selectItem: selectItems) {
+			if (selectItem instanceof AllTableColumns) {
+				resultRow.addAll(row);
+				continue;
+			}
+			
 			SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
 			resultRow.add(utils.filterRowForProjection(row, selectExpressionItem.getExpression(), fromSchema));
 		}

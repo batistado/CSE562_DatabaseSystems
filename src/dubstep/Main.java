@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import Iterators.FromIterator;
+import Iterators.PlainSelectIterator;
 import Iterators.RAIterator;
 import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
@@ -115,17 +115,17 @@ public class Main {
 		
 		
 		if (joins == null || joins.isEmpty()) {
-			return new FromIterator(fromTable, where, selectItems);
+			return new PlainSelectIterator(fromTable, where, selectItems);
 		}
 	
 		return evaluateJoins(fromTable, joins, where, selectItems);
 	}
 	
 	public static RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter, List<SelectItem> selectItems) {
-		RAIterator iterator = new FromIterator(fromTable, filter, null);
+		RAIterator iterator = new PlainSelectIterator(fromTable, filter, null);
 		for (Join join: joins) {
 			Table rightTable = (Table) join.getRightItem();
-			iterator = new FromIterator(iterator, rightTable, filter, join.getOnExpression(), null);
+			iterator = new PlainSelectIterator(iterator, rightTable, filter, join.getOnExpression(), null);
 		}
 		
 		iterator.addSelectItems(selectItems);
