@@ -144,7 +144,7 @@ public class Main {
 	
 	public static void printer(RAIterator iterator) {
 		while (iterator.hasNext()) {
-			System.out.println(iterator.next().toString().replace(", ", "|").replaceAll("[\\[.\\]]", ""));
+			System.out.println(iterator.next().toString().replace(", ", "|").replace("\'", "").replaceAll("[\\[.\\]]", ""));
 		}
 		System.out.println();
 	}
