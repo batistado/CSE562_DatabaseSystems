@@ -292,7 +292,7 @@ public class PlainSelectIterator implements RAIterator{
 					selectSchema.addTuple(column.getColumnName(), columnNumber, colDatatype);
 				} else {
 					BinaryExpression binaryExpression = (BinaryExpression) expression;
-					Column column = (Column) binaryExpression.getLeftExpression();
+					Column column = (Column) binaryExpression.getRightExpression();
 					colName = selectExpressionItem.getAlias();
 					colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
 				}

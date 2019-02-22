@@ -146,5 +146,6 @@ public class Main {
 		while (iterator.hasNext()) {
 			System.out.println(iterator.next().toString().replace(", ", "|").replaceAll("[\\[.\\]]", ""));
 		}
+		System.out.println();
 	}
 }
