@@ -10,9 +10,11 @@ import Models.Schema;
 import Models.TupleSchema;
 import Utils.utils;
 import dubstep.Main;
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -281,11 +283,19 @@ public class PlainSelectIterator implements RAIterator{
 			
 				SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
 				Expression expression = selectExpressionItem.getExpression();
-				Column column = (Column) expression;
-				String colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
-				String colName = utils.getColumnName(selectExpressionItem, column.getWholeColumnName());
-				selectSchema.addTuple(colName, columnNumber, colDatatype);
-				selectSchema.addTuple(column.getColumnName(), columnNumber, colDatatype);
+				String colName, colDatatype;
+				if (expression instanceof Column) {
+					Column column = (Column) expression;
+					colName = utils.getColumnName(selectExpressionItem, column.getWholeColumnName());
+					colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
+					selectSchema.addTuple(colName, columnNumber, colDatatype);
+					selectSchema.addTuple(column.getColumnName(), columnNumber, colDatatype);
+				} else {
+					BinaryExpression binaryExpression = (BinaryExpression) expression;
+					Column column = (Column) binaryExpression.getLeftExpression();
+					colName = selectExpressionItem.getAlias();
+					colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
+				}
 				columnNumber++;
 		}
 	}
