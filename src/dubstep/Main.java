@@ -1,6 +1,7 @@
 package dubstep;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,13 +124,23 @@ public class Main {
 	}
 	
 	public static RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter, List<SelectItem> selectItems) {
-		RAIterator iterator = new PlainSelectIterator(fromTable, filter, null);
+		RAIterator iterator = null;
+		
+		Collections.reverse(joins);
+		Expression joinOn = null;
 		for (Join join: joins) {
 			Table rightTable = (Table) join.getRightItem();
-			iterator = new PlainSelectIterator(iterator, rightTable, filter, join.getOnExpression(), null);
+			
+			if (iterator == null) {
+				iterator = new PlainSelectIterator(rightTable, filter, null);
+				joinOn = join.getOnExpression();
+			} else {
+				iterator = new PlainSelectIterator(iterator, rightTable, filter, joinOn, null);
+				joinOn = join.getOnExpression();
+			}
 		}
 		
-		iterator.addSelectItems(selectItems);
+		iterator = new PlainSelectIterator(iterator, fromTable, filter, null, selectItems);
 		
 		return iterator;
 	}

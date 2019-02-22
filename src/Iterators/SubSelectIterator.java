@@ -16,31 +16,31 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class SubSelectIterator implements RAIterator {
-	private RAIterator leftIterator = null;
+	private RAIterator rightIterator = null;
 	private ArrayList<PrimitiveValue> row;
 	private List<SelectItem> selectItems;
 	private TupleSchema selectSchema;
 	private TupleSchema fromSchema;
 	private Expression where;
 	
-	public SubSelectIterator(RAIterator leftIterator, List<SelectItem> selectItems, Expression where) {
-		this.leftIterator = leftIterator;
+	public SubSelectIterator(RAIterator rightIterator, List<SelectItem> selectItems, Expression where) {
+		this.rightIterator = rightIterator;
 		this.selectItems = selectItems;
 		this.where = where;
 		setIteratorSchema();
 	}
 	
 	public void setIteratorSchema() {
-		TupleSchema leftIteratorSchema = leftIterator.getSelectSchema();
+		TupleSchema rightIteratorSchema = rightIterator.getSelectSchema();
 		fromSchema = new TupleSchema();
 		selectSchema = new TupleSchema();
 		
 		// Copy schema
-		Map<String, Schema> schemaByName = leftIteratorSchema.schemaByName();
+		Map<String, Schema> schemaByName = rightIteratorSchema.schemaByName();
 		
 		for (String name: schemaByName.keySet()) {
 			String colName = name;
-			Schema s = leftIteratorSchema.getSchemaByName(name);
+			Schema s = rightIteratorSchema.getSchemaByName(name);
 			fromSchema.addTuple(colName, s.getColumnIndex(), s.getDataType());
 		}
 		
@@ -103,16 +103,16 @@ public class SubSelectIterator implements RAIterator {
 
 	@Override
 	public boolean hasNext() {
-		if (!leftIterator.hasNext())
+		if (!rightIterator.hasNext())
 			return false;
 		
 		
 		do {
-			row = leftIterator.next();
+			row = rightIterator.next();
 			if (where == null || utils.filterRow(row, where, fromSchema)) {
 				return true;
 			}
-		} while (leftIterator.hasNext());
+		} while (rightIterator.hasNext());
 		
 		return false;
 	}

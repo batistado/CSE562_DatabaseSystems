@@ -27,7 +27,7 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class PlainSelectIterator implements RAIterator{
-	private RAIterator leftIterator = null;
+	private RAIterator rightIterator = null;
 	private BufferedReader reader;
 	private ArrayList<PrimitiveValue> row;
 	private String line;
@@ -46,14 +46,14 @@ public class PlainSelectIterator implements RAIterator{
 		setIteratorSchema();
 	}
 	
-	public PlainSelectIterator (RAIterator leftIterator, Table table, Expression where, Expression joinOn, List<SelectItem> selectItems) {
-		this.leftIterator = leftIterator;
+	public PlainSelectIterator (RAIterator rightIterator, Table table, Expression where, Expression joinOn, List<SelectItem> selectItems) {
+		this.rightIterator = rightIterator;
 		this.table = table;
 		this.where = where;
 		this.selectItems = selectItems;
 		this.joinOn = joinOn;
-		this.leftIterator.resetWhere();
-		this.leftIterator.resetProjection();
+		this.rightIterator.resetWhere();
+		this.rightIterator.resetProjection();
 		initializeReader();
 		setIteratorSchema();
 	}
@@ -88,7 +88,7 @@ public class PlainSelectIterator implements RAIterator{
 		try {
 			reader = new BufferedReader(new FileReader(DIR + table.getName() + ".csv"));
 			
-			if (leftIterator != null)
+			if (rightIterator != null)
 				line = reader.readLine();
 			
 		} catch (IOException ex) {
@@ -100,8 +100,7 @@ public class PlainSelectIterator implements RAIterator{
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
-			
-			if (leftIterator == null) {
+			if (rightIterator == null) {
 				while ((line = reader.readLine()) != null) {
 					row = getLeftRow();
 					if (where == null || utils.filterRow(row, where, fromSchema))
@@ -111,8 +110,8 @@ public class PlainSelectIterator implements RAIterator{
 				return false;
 			}
 			
-			if (!leftIterator.hasNext()) {
-				leftIterator.resetIterator();
+			if (!rightIterator.hasNext()) {
+				rightIterator.resetIterator();
 				line = reader.readLine();
 			}
 			
@@ -125,8 +124,8 @@ public class PlainSelectIterator implements RAIterator{
 					ArrayList<PrimitiveValue> tmp = new ArrayList<>();
 					row = getLeftRow();
 					
-					tmp.addAll(leftIterator.next());
 					tmp.addAll(row);
+					tmp.addAll(rightIterator.next());
 					
 					if (where == null && joinOn == null) {
 						row = tmp;
@@ -143,9 +142,9 @@ public class PlainSelectIterator implements RAIterator{
 							return true;
 						}
 					}
-				} while (leftIterator.hasNext());
+				} while (rightIterator.hasNext());
 				
-				leftIterator.resetIterator();
+				rightIterator.resetIterator();
 				
 			} while ((line = reader.readLine()) != null);
 			
@@ -207,7 +206,7 @@ public class PlainSelectIterator implements RAIterator{
 	public void setIteratorSchema() {
 		String aliasedTableName = utils.getTableName(table);
 		
-		if (leftIterator == null) {
+		if (rightIterator == null) {
 			if (!aliasedTableName.equals(table.getName())) {
 				fromSchema = new TupleSchema();
 				Map<String, Schema> schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
@@ -232,15 +231,17 @@ public class PlainSelectIterator implements RAIterator{
 				}
 			}
 		} else {
-			TupleSchema leftIteratorSchema = leftIterator.getIteratorSchema();
+			TupleSchema rightIteratorSchema = rightIterator.getIteratorSchema();
 			fromSchema = new TupleSchema();
 			
-			Map<String, Schema> schemaByName = leftIteratorSchema.schemaByName();
-			
+			Map<String, Schema> schemaByName;
+			schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
 			Integer maxIndex = -1;
+			
 			for (String name: schemaByName.keySet()) {
-				String colName = name;
-				Schema s = leftIteratorSchema.getSchemaByName(name);
+				// Since default columns are referenced as X.A
+				String colName = !aliasedTableName.equals(table.getName()) ? aliasedTableName + "." + name.substring(name.lastIndexOf('.') + 1) : name;
+				Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(name);
 				fromSchema.addTuple(colName, s.getColumnIndex(), s.getDataType());
 				
 				if (s.getColumnIndex() > maxIndex) {
@@ -248,12 +249,10 @@ public class PlainSelectIterator implements RAIterator{
 				}
 			}
 			
-			schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
-			
+			schemaByName = rightIteratorSchema.schemaByName();
 			for (String name: schemaByName.keySet()) {
-				// Since default columns are referenced as X.A
-				String colName = !aliasedTableName.equals(table.getName()) ? aliasedTableName + "." + name.substring(name.lastIndexOf('.') + 1) : name;
-				Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(name);
+				String colName = name;
+				Schema s = rightIteratorSchema.getSchemaByName(name);
 				fromSchema.addTuple(colName, s.getColumnIndex() + maxIndex + 1, s.getDataType());
 			}
 		}
