@@ -77,11 +77,14 @@ public class PlainSelectIterator implements RAIterator{
 	public void resetIterator() {
 		try {
 			reader.close();
+			initializeReader();
+			if (rightIterator != null)
+				rightIterator.resetIterator();
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		initializeReader();
 	}
 	
 	public void initializeReader() {
@@ -107,11 +110,16 @@ public class PlainSelectIterator implements RAIterator{
 						return true;
 				}
 				
+				row = null;
 				return false;
 			}
 			
 			if (!rightIterator.hasNext()) {
 				rightIterator.resetIterator();
+				
+				if(!rightIterator.hasNext())
+					return false;
+				
 				line = reader.readLine();
 			}
 			
@@ -318,6 +326,7 @@ public class PlainSelectIterator implements RAIterator{
 	}
 	
 	public ArrayList<PrimitiveValue> projectedRow() {
+		
 		if (selectItems == null || selectItems.isEmpty() || selectItems.get(0) instanceof AllColumns) {
 			return row;
 		}
@@ -326,7 +335,12 @@ public class PlainSelectIterator implements RAIterator{
 		
 		for (SelectItem selectItem: selectItems) {
 			if (selectItem instanceof AllTableColumns) {
-				resultRow.addAll(row);
+				AllTableColumns t = (AllTableColumns) selectItem;
+				Table table = t.getTable();
+				
+				for (Integer index : fromSchema.getIndexesOfTable(utils.getTableName(table))) {
+					resultRow.add(row.get(index));
+				}
 				continue;
 			}
 			

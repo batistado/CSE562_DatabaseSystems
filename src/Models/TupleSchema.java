@@ -1,6 +1,9 @@
 package Models;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TupleSchema {
@@ -13,6 +16,17 @@ public class TupleSchema {
 		schemaByColumnIndex.put(index, schema);
 	}
 	
+	public List<Integer> getIndexesOfTable(String tableName){
+		ArrayList<Integer> result = new ArrayList<>();
+		for (String columnName: schemaByColumnName.keySet()) {
+			if (columnName.startsWith(tableName))
+				result.add(schemaByColumnName.get(columnName).getColumnIndex());
+		}
+		
+		Collections.sort(result);
+		return result;
+	}
+
 	public void updateTuple(String colName, Integer index, String dataType) {
 		Schema schema = new Schema(dataType, index, colName);
 		schemaByColumnName.put(colName, schema);

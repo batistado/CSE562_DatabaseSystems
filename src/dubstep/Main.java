@@ -1,5 +1,8 @@
 package dubstep;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +34,7 @@ public class Main {
 	public static Map<String, TupleSchema> tableSchemas = new HashMap<>();
 	
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
 		CCJSqlParser parser;
 		
 		System.out.println("$> ");
@@ -154,11 +157,14 @@ public class Main {
 		}
 	}
 	
-	public static void printer(RAIterator iterator) {
+	public static void printer(RAIterator iterator) throws FileNotFoundException, UnsupportedEncodingException {
+		PrintWriter writer = new PrintWriter("/Users/msyed3/Downloads/sample queries/NBA_Examples/out.txt", "UTF-8");
 		while (iterator.hasNext()) {
 			System.out.println(getOutputString(iterator.next()));
+			
 			//System.out.println(iterator.next().toString().replace(", ", "|").replace("\'", "").replaceAll("[\\[.\\]]", ""));
 		}
+		writer.close();
 		System.out.println();
 	}
 	
