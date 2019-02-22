@@ -153,6 +153,8 @@ public class PlainSelectIterator implements RAIterator{
 				} while (rightIterator.hasNext());
 				
 				rightIterator.resetIterator();
+				if(!rightIterator.hasNext())
+					return false;
 				
 			} while ((line = reader.readLine()) != null);
 			
