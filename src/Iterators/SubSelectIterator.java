@@ -7,6 +7,7 @@ import java.util.Map;
 import Models.Schema;
 import Models.TupleSchema;
 import Utils.utils;
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
@@ -53,11 +54,19 @@ public class SubSelectIterator implements RAIterator {
 		for (SelectItem selectItem: selectItems) {
 				SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
 				Expression expression = selectExpressionItem.getExpression();
-				Column column = (Column) expression;
-				String colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
-				String colName = utils.getColumnName(selectExpressionItem, column.getWholeColumnName());
-				selectSchema.addTuple(colName, columnNumber, colDatatype);
-				selectSchema.addTuple(column.getColumnName(), columnNumber, colDatatype);
+				String colName, colDatatype;
+				if (expression instanceof Column) {
+					Column column = (Column) expression;
+					colName = utils.getColumnName(selectExpressionItem, column.getWholeColumnName());
+					colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
+					selectSchema.addTuple(colName, columnNumber, colDatatype);
+					selectSchema.addTuple(column.getColumnName(), columnNumber, colDatatype);
+				} else {
+					BinaryExpression binaryExpression = (BinaryExpression) expression;
+					colDatatype = utils.getExpressionColumnDatatype(binaryExpression, fromSchema);
+					colName = selectExpressionItem.getAlias();
+					selectSchema.addTuple(colName, columnNumber, colDatatype);
+				}
 				columnNumber++;
 		}
 	}

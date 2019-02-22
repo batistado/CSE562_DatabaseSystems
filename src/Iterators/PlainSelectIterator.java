@@ -19,6 +19,7 @@ import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.AllTableColumns;
@@ -292,21 +293,12 @@ public class PlainSelectIterator implements RAIterator{
 					selectSchema.addTuple(column.getColumnName(), columnNumber, colDatatype);
 				} else {
 					BinaryExpression binaryExpression = (BinaryExpression) expression;
-					Column column = getExpressionColumn(binaryExpression);
+					colDatatype = utils.getExpressionColumnDatatype(binaryExpression, fromSchema);
 					colName = selectExpressionItem.getAlias();
-					colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
 					selectSchema.addTuple(colName, columnNumber, colDatatype);
 				}
 				columnNumber++;
 		}
-	}
-	
-	private Column getExpressionColumn(BinaryExpression binaryExpression) {
-		if (binaryExpression.getLeftExpression() instanceof Column) {
-			return (Column) binaryExpression.getLeftExpression();
-		}
-		
-		return getExpressionColumn((BinaryExpression) binaryExpression.getLeftExpression());
 	}
 	
 	public Integer addAllTableColumnSchema(AllTableColumns allTableColumns, Integer columnNumber) {
