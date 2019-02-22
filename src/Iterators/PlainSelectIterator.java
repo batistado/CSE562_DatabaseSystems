@@ -292,12 +292,21 @@ public class PlainSelectIterator implements RAIterator{
 					selectSchema.addTuple(column.getColumnName(), columnNumber, colDatatype);
 				} else {
 					BinaryExpression binaryExpression = (BinaryExpression) expression;
-					Column column = (Column) binaryExpression.getRightExpression();
+					Column column = getExpressionColumn(binaryExpression);
 					colName = selectExpressionItem.getAlias();
 					colDatatype = fromSchema.getSchemaByName(column.getWholeColumnName()).getDataType();
+					selectSchema.addTuple(colName, columnNumber, colDatatype);
 				}
 				columnNumber++;
 		}
+	}
+	
+	private Column getExpressionColumn(BinaryExpression binaryExpression) {
+		if (binaryExpression.getLeftExpression() instanceof Column) {
+			return (Column) binaryExpression.getLeftExpression();
+		}
+		
+		return getExpressionColumn((BinaryExpression) binaryExpression.getLeftExpression());
 	}
 	
 	public Integer addAllTableColumnSchema(AllTableColumns allTableColumns, Integer columnNumber) {
