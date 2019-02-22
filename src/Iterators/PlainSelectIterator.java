@@ -83,7 +83,7 @@ public class PlainSelectIterator implements RAIterator{
 	
 	public void initializeReader() {
 		try {
-			reader = new BufferedReader(new FileReader(DIR + table.getName() + ".dat"));
+			reader = new BufferedReader(new FileReader(DIR + table.getName() + ".csv"));
 			
 			if (leftIterator != null)
 				line = reader.readLine();
