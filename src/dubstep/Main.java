@@ -11,6 +11,7 @@ import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
 import Models.TupleSchema;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Table;
@@ -144,8 +145,18 @@ public class Main {
 	
 	public static void printer(RAIterator iterator) {
 		while (iterator.hasNext()) {
-			System.out.println(iterator.next().toString().replace(", ", "|").replace("\'", "").replaceAll("[\\[.\\]]", ""));
+			System.out.println(getOutputString(iterator.next()));
+			//System.out.println(iterator.next().toString().replace(", ", "|").replace("\'", "").replaceAll("[\\[.\\]]", ""));
 		}
 		System.out.println();
+	}
+	
+	public static String getOutputString(List<PrimitiveValue> resultList) {
+	    StringBuffer sb = new StringBuffer();
+	    for (PrimitiveValue value : resultList){
+	        sb.append(value.toString().replaceAll("^\'|\'$", "")).append("|");
+	    }
+	    sb.deleteCharAt(sb.lastIndexOf("|"));
+	    return sb.toString();
 	}
 }
