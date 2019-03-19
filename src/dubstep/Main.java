@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import Iterators.CrossProductIterator;
 import Iterators.FromIterator;
 import Iterators.PlainSelectIterator;
 import Iterators.ProjectIterator;
@@ -126,9 +127,8 @@ public class Main {
 			return evaluateFromTable(fromTable, where);
 		} else {
 			// joins implementation
+			return evaluateJoins(fromTable, joins, where);
 		}
-		
-		return null;
 	}
 	
 	public static RAIterator evaluateFromTable(Table fromTable, Expression where) {
@@ -137,26 +137,30 @@ public class Main {
 		return where == null ? fromIterator : new SelectIterator(fromIterator, where);
 	}
 	
-	public static RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter, List<SelectItem> selectItems) {
+	public static RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter) {
 		RAIterator iterator = null;
 		
-		Collections.reverse(joins);
-		Expression joinOn = null;
-		for (Join join: joins) {
-			Table rightTable = (Table) join.getRightItem();
+		if (joins.size() == 1) {
+			Table rightTable = (Table) joins.get(0).getRightItem();
+			iterator = new CrossProductIterator(new FromIterator(fromTable), new FromIterator(rightTable));
+		} else {
+			Collections.reverse(joins);
 			
-			if (iterator == null) {
-				iterator = new PlainSelectIterator(rightTable, filter, null);
-				joinOn = join.getOnExpression();
-			} else {
-				iterator = new PlainSelectIterator(iterator, rightTable, filter, joinOn, null);
-				joinOn = join.getOnExpression();
+			RAIterator rightIterator = null;
+			for (Join join: joins) {
+				Table rightTable = (Table) join.getRightItem();
+				
+				if (rightIterator == null) {
+					rightIterator = new FromIterator(rightTable);
+				} else {
+					rightIterator = new CrossProductIterator(new FromIterator(rightTable), rightIterator);
+				}
 			}
+			
+			iterator = new CrossProductIterator(new FromIterator(fromTable), rightIterator);
 		}
 		
-		iterator = new PlainSelectIterator(iterator, fromTable, filter, null, selectItems);
-		
-		return iterator;
+		return filter == null ? iterator : new SelectIterator(iterator, filter);
 	}
 	
 	public static RAIterator evaluateQuery(Select selectQuery) {
