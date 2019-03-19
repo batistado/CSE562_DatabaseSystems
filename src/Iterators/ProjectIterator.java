@@ -30,12 +30,6 @@ public class ProjectIterator implements RAIterator{
 		setIteratorSchema();
 	}
 	
-	
-	public void addSelectItems(List<SelectItem> selectItems) {
-		this.selectItems = selectItems;
-		addSelectSchema();
-	}
-	
 	public void resetIterator() {
 		rightIterator.resetIterator();
 	}
@@ -169,5 +163,11 @@ public class ProjectIterator implements RAIterator{
 	public TupleSchema getSelectSchema() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void addSelectItems(List<SelectItem> selectItems) {
+		// TODO Auto-generated method stub
+		
 	}
 }

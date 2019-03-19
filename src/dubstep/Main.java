@@ -14,6 +14,7 @@ import Iterators.PlainSelectIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
 import Iterators.SelectIterator;
+import Iterators.SubQueryIterator;
 import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
 import Models.TupleSchema;
@@ -92,10 +93,12 @@ public class Main {
 	}
 	
 	public static RAIterator evaluateSubQuery(PlainSelect selectQuery) {
+		Expression where = selectQuery.getWhere();
 		SubSelect subQuery = (SubSelect) selectQuery.getFromItem();
+		
 		if (subQuery.getSelectBody() instanceof PlainSelect) {
 			PlainSelect subSelect = (PlainSelect)subQuery.getSelectBody();
-			return new SubSelectIterator(evaluatePlainSelect(subSelect), selectQuery.getSelectItems(), selectQuery.getWhere());
+			return where == null ? new SubQueryIterator(evaluatePlainSelect(subSelect)) : new SelectIterator(new SubQueryIterator(evaluatePlainSelect(subSelect)), where);
 		} 
 		else {
 			// Write Union logic
