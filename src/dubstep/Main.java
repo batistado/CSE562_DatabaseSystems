@@ -8,8 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import Iterators.FromIterator;
 import Iterators.PlainSelectIterator;
+import Iterators.ProjectIterator;
 import Iterators.RAIterator;
+import Iterators.SelectIterator;
 import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
 import Models.TupleSchema;
@@ -72,16 +75,19 @@ public class Main {
 	public static RAIterator evaluatePlainSelect(PlainSelect plainSelectQuery) {
 		FromItem fromItem = plainSelectQuery.getFromItem();
 		
+		RAIterator innerIterator = null;
 		if (fromItem == null) {
 			// Implement expression evaluation
 			return null;
 		}
 		else if (fromItem instanceof SubSelect) {
-			return evaluateSubQuery(plainSelectQuery);
+			innerIterator =  evaluateSubQuery(plainSelectQuery);
 		} 
 		else {
-			return evaluateFromTables(plainSelectQuery);
+			innerIterator = evaluateFromTables(plainSelectQuery);
 		}
+		
+		return new ProjectIterator(innerIterator, plainSelectQuery.getSelectItems());
 	}
 	
 	public static RAIterator evaluateSubQuery(PlainSelect selectQuery) {
@@ -115,14 +121,20 @@ public class Main {
 		Expression where = plainSelect.getWhere();
 		Table fromTable = (Table) plainSelect.getFromItem();
 		List<Join> joins = plainSelect.getJoins();
-		List<SelectItem> selectItems = plainSelect.getSelectItems();
-		
 		
 		if (joins == null || joins.isEmpty()) {
-			return new PlainSelectIterator(fromTable, where, selectItems);
+			return evaluateFromTable(fromTable, where);
+		} else {
+			// joins implementation
 		}
+		
+		return null;
+	}
 	
-		return evaluateJoins(fromTable, joins, where, selectItems);
+	public static RAIterator evaluateFromTable(Table fromTable, Expression where) {
+		FromIterator fromIterator = new FromIterator(fromTable);
+		
+		return where == null ? fromIterator : new SelectIterator(fromIterator, where);
 	}
 	
 	public static RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter, List<SelectItem> selectItems) {
