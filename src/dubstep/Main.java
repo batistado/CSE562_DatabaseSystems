@@ -10,6 +10,7 @@ import java.util.Map;
 
 import Iterators.CrossProductIterator;
 import Iterators.FromIterator;
+import Iterators.OnePassHashJoinIterator;
 import Iterators.PlainSelectIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
@@ -146,6 +147,7 @@ public class Main {
 		if (joins.size() == 1) {
 			Table rightTable = (Table) joins.get(0).getRightItem();
 			iterator = new CrossProductIterator(new FromIterator(fromTable), new FromIterator(rightTable));
+//			return new OnePassHashJoinIterator(new FromIterator(fromTable), new FromIterator(rightTable), filter);
 		} else {
 			Collections.reverse(joins);
 			
