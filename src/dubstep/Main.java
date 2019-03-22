@@ -14,10 +14,12 @@ import Iterators.PlainSelectIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
 import Iterators.SelectIterator;
+import Iterators.SortIterator;
 import Iterators.SubQueryIterator;
 import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
 import Models.TupleSchema;
+import Utils.Sort;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.parser.CCJSqlParser;
@@ -88,6 +90,8 @@ public class Main {
 		else {
 			innerIterator = evaluateFromTables(plainSelectQuery);
 		}
+		
+		innerIterator = new SortIterator(innerIterator, plainSelectQuery.getOrderByElements());
 		
 		return new ProjectIterator(innerIterator, plainSelectQuery.getSelectItems());
 	}

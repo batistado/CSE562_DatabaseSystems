@@ -66,7 +66,6 @@ public class utils {
 			e.printStackTrace();
 			return null;
 		}
-		
 	}
 	
 	public static Boolean filterRow(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, TupleSchema tupleSchema){
