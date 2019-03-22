@@ -28,4 +28,8 @@ public interface RAIterator extends Iterator<ArrayList<PrimitiveValue>>  {
 	public void addSelectItems(List<SelectItem> selectItems);
 	
 	public TupleSchema getSelectSchema();
+	
+	public RAIterator getLeftIterator();
+	
+	public RAIterator getRightIterator();
 }

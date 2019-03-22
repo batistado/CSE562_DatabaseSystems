@@ -10,14 +10,12 @@ import java.util.Map;
 
 import Iterators.CrossProductIterator;
 import Iterators.FromIterator;
-import Iterators.OnePassHashJoinIterator;
-import Iterators.PlainSelectIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
 import Iterators.SelectIterator;
 import Iterators.SubQueryIterator;
-import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
+import Utils.*;
 import Models.TupleSchema;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
@@ -31,7 +29,6 @@ import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
 
@@ -49,7 +46,8 @@ public class Main {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
 					Select selectQuery = (Select) queryStatement;
-					printer(evaluateQuery(selectQuery));
+					RAIterator queryIterator = Optimizer.optimizeRA(evaluateQuery(selectQuery));
+					printer(queryIterator);
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
@@ -147,7 +145,6 @@ public class Main {
 		if (joins.size() == 1) {
 			Table rightTable = (Table) joins.get(0).getRightItem();
 			iterator = new CrossProductIterator(new FromIterator(fromTable), new FromIterator(rightTable));
-//			return new OnePassHashJoinIterator(new FromIterator(fromTable), new FromIterator(rightTable), filter);
 		} else {
 			Collections.reverse(joins);
 			

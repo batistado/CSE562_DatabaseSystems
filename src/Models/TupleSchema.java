@@ -26,6 +26,14 @@ public class TupleSchema {
 		Collections.sort(result);
 		return result;
 	}
+	
+	public boolean containsKey(String key) {
+		return schemaByColumnName.containsKey(key);
+	}
+	
+	public boolean containsKey(Integer key) {
+		return schemaByColumnIndex.containsKey(key);
+	}
 
 	public void updateTuple(String colName, Integer index, String dataType) {
 		Schema schema = new Schema(dataType, index, colName);

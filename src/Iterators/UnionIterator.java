@@ -22,6 +22,10 @@ public class UnionIterator implements RAIterator {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	public List<RAIterator> getIterators(){
+		return this.iterators;
+	}
 
 	@Override
 	public TupleSchema getIteratorSchema() {
@@ -75,5 +79,16 @@ public class UnionIterator implements RAIterator {
 		// TODO Auto-generated method stub
 		return iterators.get(0).getSelectSchema();
 	}
+	
+	@Override
+	public RAIterator getLeftIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
+	@Override
+	public RAIterator getRightIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -33,6 +33,10 @@ public class OnePassHashJoinIterator implements RAIterator{
 		this.initializeIterator();
 	}
 	
+	public Expression getExpression() {
+		return this.joinCondition;
+	}
+	
 	public void initializeIterator() {
 		Expression leftCondition = ((EqualsTo) joinCondition).getLeftExpression();
 		while (leftIterator.hasNext()) {
@@ -60,6 +64,9 @@ public class OnePassHashJoinIterator implements RAIterator{
 	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
+		if (joinMap.isEmpty())
+			return false;
+		
 		if (!buffer.isEmpty()) {
 			row = buffer.pollFirst();
 			return true;
@@ -137,6 +144,18 @@ public class OnePassHashJoinIterator implements RAIterator{
 	public void addSelectItems(List<SelectItem> selectItems) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public RAIterator getLeftIterator() {
+		// TODO Auto-generated method stub
+		return leftIterator;
+	}
+
+	@Override
+	public RAIterator getRightIterator() {
+		// TODO Auto-generated method stub
+		return rightIterator;
 	}
 }
 
