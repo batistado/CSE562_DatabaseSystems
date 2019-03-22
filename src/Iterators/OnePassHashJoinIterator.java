@@ -158,4 +158,3 @@ public class OnePassHashJoinIterator implements RAIterator{
 		return rightIterator;
 	}
 }
-
