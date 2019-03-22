@@ -25,19 +25,70 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 
 public class Sort {
-	private ArrayList<String> tempFiles = new ArrayList<String>();
+	private ArrayList<File> tempFiles = new ArrayList<File>();
 	private PriorityQueue<BrIterator> pq = null;
-	private List<OrderByElement> orderByElement;
+	private List<OrderByElement> orderByElements;
 	private String outputFile;
 	private RAIterator rightIterator = null;
 	private ArrayList<ArrayList<PrimitiveValue>> rows = new ArrayList<ArrayList<PrimitiveValue>>();
 	private Comparator<BrIterator> customComparator = null;
 	private TupleSchema fromSchema;
+	private String directory;
 	
-	public Sort(RAIterator rightIterator, List<OrderByElement> orderByElement, TupleSchema fromSchema){
+	public Sort(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema, String directory){
 		this.rightIterator = rightIterator;
-		this.orderByElement = orderByElement;
+		this.orderByElements = orderByElements;
 		this.fromSchema = fromSchema;
+		this.directory = directory;
+	}
+	
+	public int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b) {
+		// TODO Auto-generated method stub
+		int c = 0;
+		for(OrderByElement o: orderByElements) {
+			boolean isAscending = o.isAsc();
+			
+			PrimitiveValue pa = utils.projectColumnValue(a, o.getExpression(), fromSchema);
+			PrimitiveValue pb = utils.projectColumnValue(b, o.getExpression(), fromSchema);
+			try {
+				if(pa instanceof LongValue && pb instanceof LongValue) {
+					if(pa.toLong() > pb.toLong()) {
+						c = 1;
+					}
+					if(pa.toLong() < pb.toLong()) {
+						c = -1;
+					}
+				} else if(pa instanceof DoubleValue && pb instanceof DoubleValue) {
+					if(pa.toDouble() > pb.toDouble()) {
+						c = 1;
+					}
+					if(pa.toDouble() < pa.toDouble()) {
+						c = -1;
+					}
+				} else if(pa instanceof DateValue && pb instanceof DateValue){
+					DateValue dpa = (DateValue) pa;
+					DateValue dpb = (DateValue) pb;
+					
+					if((dpa.getYear()*10000+dpa.getMonth()*100+dpa.getDate()) > (dpb.getYear()*10000+dpb.getMonth()*100+dpb.getDate())) {
+						c = 1;
+					}
+					if((dpa.getYear()*10000+dpa.getMonth()*100+dpa.getDate()) < (dpb.getYear()*10000+dpb.getMonth()*100+dpb.getDate())) {
+						c = -1;
+					}
+				}
+				else {
+					c = pa.toString().compareTo(pb.toString());
+				}
+				
+				if(c != 0) {
+					c = isAscending ? c : -1 * c;
+					break;
+				}
+			}catch(InvalidPrimitive i) {
+				i.printStackTrace();
+			}
+		}
+		return c;
 	}
 	
 	public String sortData(){
@@ -71,58 +122,21 @@ public class Sort {
 		Collections.sort(rows, new Comparator<ArrayList<PrimitiveValue>>() {
 			@Override
 			public int compare(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b) {
-				// TODO Auto-generated method stub
-				int c = 0;
-				for(OrderByElement o: orderByElement) {
-					PrimitiveValue pa = utils.projectColumnValue(a, o.getExpression(), fromSchema);
-					PrimitiveValue pb = utils.projectColumnValue(b, o.getExpression(), fromSchema);
-					try {
-						if(pa instanceof LongValue && pb instanceof LongValue) {
-							if(pa.toLong() > pb.toLong()) {
-								c = 1;
-							}
-							if(pa.toLong() < pb.toLong()) {
-								c = -1;
-							}
-						} else if(pa instanceof DoubleValue && pb instanceof DoubleValue) {
-							if(pa.toDouble() > pb.toDouble()) {
-								c = 1;
-							}
-							if(pa.toDouble() < pa.toDouble()) {
-								c = -1;
-							}
-						}else {
-							c = pa.toString().compareTo(pb.toString());
-						}
-						
-						if(c != 0) {
-							break;
-						}
-					}catch(InvalidPrimitive i) {
-						i.printStackTrace();
-					}
-				}
-				return c;
+				return sortComparator(a, b);
 			}
 		});
 	}
 	
 	public void writeBuffer() {
 		try {
-			File temp = File.createTempFile("Temp", ".csv");
-			temp.deleteOnExit();
+			File temp = File.createTempFile("Temp", ".csv", new File(directory));
 			BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
 			for(ArrayList<PrimitiveValue> i: rows) {
-				StringBuffer tmp = new StringBuffer();
-				for(PrimitiveValue j: i) {
-					tmp.append(j.toString());
-					tmp.append("|");
-				}
-				bw.write(tmp.substring(0, tmp.length()-1));
+				bw.write(utils.getOutputString(i));
 				bw.write("\n");
 			}
 			bw.close();
-			tempFiles.add(temp.getName());
+			tempFiles.add(temp);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -131,11 +145,11 @@ public class Sort {
 	
 	public void mergeFiles() {
 		pq = new PriorityQueue<BrIterator>(customComparator);
-		String path = System.getProperty("java.io.tmpdir");
+		String path = directory;
 		StringBuffer filePath;
-		for(String i: tempFiles) {
+		for(File tempFileI: tempFiles) {
 			filePath = new StringBuffer(path);
-			filePath.append(i);
+			filePath.append(tempFileI.getName());
 			BrIterator br = new BrIterator(filePath.toString());
 			if(br.hasNext()) {
 				pq.add(br);
@@ -144,7 +158,7 @@ public class Sort {
 		
 		File temp;
 		try {
-			temp = File.createTempFile("TempFinalX", ".csv");
+			temp = File.createTempFile("TempFinalX", ".csv", new File(directory));
 			BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
 			while(!pq.isEmpty()) {
 				BrIterator it = pq.poll();
@@ -155,6 +169,11 @@ public class Sort {
 				}
 			}
 			outputFile = temp.getName();
+			
+			for(File tempFileI: tempFiles) {
+				tempFileI.delete();
+			}
+			
 			bw.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -174,47 +193,7 @@ public class Sort {
 				ArrayList<PrimitiveValue> tmp1 = getRow(line1);
 				ArrayList<PrimitiveValue> tmp2 = getRow(line2);
 				
-				int c = 0;
-				for(OrderByElement o: orderByElement) {
-					PrimitiveValue pa = utils.projectColumnValue(tmp1, o.getExpression(), fromSchema);
-					PrimitiveValue pb = utils.projectColumnValue(tmp2, o.getExpression(), fromSchema);
-					try {
-						if(pa instanceof LongValue && pb instanceof LongValue) {
-							if(pa.toLong() > pb.toLong()) {
-								c = 1;
-							}
-							if(pa.toLong() < pb.toLong()) {
-								c = -1;
-							}
-						} else if(pa instanceof DoubleValue && pb instanceof DoubleValue) {
-							if(pa.toDouble() > pb.toDouble()) {
-								c = 1;
-							}
-							if(pa.toDouble() < pa.toDouble()) {
-								c = -1;
-							}
-						} else if(pa instanceof DateValue && pb instanceof DateValue){
-							DateValue dpa = (DateValue) pa;
-							DateValue dpb = (DateValue) pb;
-							
-							if((dpa.getYear()*10000+dpa.getMonth()*100+dpa.getDate()) > (dpb.getYear()*10000+dpb.getMonth()*100+dpb.getDate())) {
-								c = 1;
-							}
-							if((dpa.getYear()*10000+dpa.getMonth()*100+dpa.getDate()) < (dpb.getYear()*10000+dpb.getMonth()*100+dpb.getDate())) {
-								c = -1;
-							}
-						} else {
-							c = pa.toString().compareTo(pb.toString());
-						}
-						
-						if(c != 0) {
-							break;
-						}
-					}catch(InvalidPrimitive i) {
-						i.printStackTrace();
-					}
-				}
-				return c;
+				return sortComparator(tmp1, tmp2);
 			}
 			
 			public ArrayList<PrimitiveValue> getRow(String[] line){

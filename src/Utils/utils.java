@@ -2,9 +2,11 @@ package Utils;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import Models.TupleSchema;
 import net.sf.jsqlparser.eval.Eval;
+import net.sf.jsqlparser.eval.Eval.CmpOp;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
@@ -14,6 +16,15 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 public class utils {
+	public static String getOutputString(List<PrimitiveValue> resultList) {
+	    StringBuffer sb = new StringBuffer();
+	    for (PrimitiveValue value : resultList){
+	        sb.append(value.toString().replaceAll("^\'|\'$", "")).append("|");
+	    }
+	    sb.deleteCharAt(sb.lastIndexOf("|"));
+	    return sb.toString();
+	}
+	
 	public static String getExpressionColumnDatatype(BinaryExpression binaryExpression, TupleSchema fromSchema) {
 		Expression leftExpression = binaryExpression.getLeftExpression();
 		if (leftExpression instanceof Column) {

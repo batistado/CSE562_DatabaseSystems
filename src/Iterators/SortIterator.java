@@ -25,12 +25,11 @@ public class SortIterator implements RAIterator{
 	private String line;
 	private TupleSchema fromSchema;
 	private String fileName;
-	private String tempDirPath = "java.io.tmpdir";
 	
-	public SortIterator (RAIterator rightIterator, List<OrderByElement> orderByElement) {
+	public SortIterator (RAIterator rightIterator, List<OrderByElement> orderByElements) {
 		this.rightIterator = rightIterator;
 		this.setIteratorSchema();
-		Sort s = new Sort(rightIterator, orderByElement, fromSchema);
+		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR);
 		fileName = s.sortData();
 		initializeReader();
 	}
@@ -38,7 +37,7 @@ public class SortIterator implements RAIterator{
 	private void initializeReader() {
 		// TODO Auto-generated method stub
 		try {
-			reader = new BufferedReader(new FileReader(System.getProperty(tempDirPath) + fileName));
+			reader = new BufferedReader(new FileReader(DIR + fileName));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -14,6 +14,7 @@ import Iterators.LimitIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
 import Iterators.SelectIterator;
+import Iterators.SortIterator;
 import Iterators.SubQueryIterator;
 import Iterators.UnionIterator;
 import Utils.*;
@@ -29,6 +30,7 @@ import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.Limit;
+import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectItem;
@@ -92,6 +94,7 @@ public class Main {
 		}
 		
 		innerIterator = addProjection(innerIterator, plainSelectQuery.getSelectItems());
+		innerIterator = addSort(innerIterator, plainSelectQuery.getOrderByElements());
 		innerIterator = addLimit(innerIterator, plainSelectQuery.getLimit());
 		
 		return innerIterator;
@@ -102,6 +105,14 @@ public class Main {
 			return iterator;
 		
 		return new LimitIterator(iterator, limit);
+	}
+	
+	public static RAIterator addSort(RAIterator iterator, List<OrderByElement> orderByElements) {
+		if (orderByElements == null || orderByElements.isEmpty())
+			return iterator;
+		
+		
+		return new SortIterator(Optimizer.optimizeRA(iterator), orderByElements);
 	}
 	
 	public static RAIterator addProjection(RAIterator iterator, List<SelectItem> selectItems) {
@@ -193,17 +204,8 @@ public class Main {
 	
 	public static void printer(RAIterator iterator) throws FileNotFoundException, UnsupportedEncodingException {
 		while (iterator.hasNext()) {
-			System.out.println(getOutputString(iterator.next()));
+			System.out.println(utils.getOutputString(iterator.next()));
 		}
 		System.out.println();
-	}
-	
-	public static String getOutputString(List<PrimitiveValue> resultList) {
-	    StringBuffer sb = new StringBuffer();
-	    for (PrimitiveValue value : resultList){
-	        sb.append(value.toString().replaceAll("^\'|\'$", "")).append("|");
-	    }
-	    sb.deleteCharAt(sb.lastIndexOf("|"));
-	    return sb.toString();
 	}
 }
