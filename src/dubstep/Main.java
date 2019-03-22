@@ -10,14 +10,13 @@ import java.util.Map;
 
 import Iterators.CrossProductIterator;
 import Iterators.FromIterator;
-import Iterators.PlainSelectIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
 import Iterators.SelectIterator;
 import Iterators.SortIterator;
 import Iterators.SubQueryIterator;
-import Iterators.SubSelectIterator;
 import Iterators.UnionIterator;
+import Utils.*;
 import Models.TupleSchema;
 import Utils.Sort;
 import net.sf.jsqlparser.expression.Expression;
@@ -32,7 +31,6 @@ import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
 
@@ -50,7 +48,8 @@ public class Main {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
 					Select selectQuery = (Select) queryStatement;
-					printer(evaluateQuery(selectQuery));
+					RAIterator queryIterator = Optimizer.optimizeRA(evaluateQuery(selectQuery));
+					printer(queryIterator);
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);

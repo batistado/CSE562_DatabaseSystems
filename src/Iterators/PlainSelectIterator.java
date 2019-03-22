@@ -352,4 +352,16 @@ public class PlainSelectIterator implements RAIterator{
 		
 		return resultRow;
 	}
+	
+	@Override
+	public RAIterator getLeftIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RAIterator getRightIterator() {
+		// TODO Auto-generated method stub
+		return rightIterator;
+	}
 }

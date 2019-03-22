@@ -33,6 +33,10 @@ public class ProjectIterator implements RAIterator{
 	public void resetIterator() {
 		rightIterator.resetIterator();
 	}
+	
+	public List<SelectItem> getSelectItems() {
+		return this.selectItems;
+	}
 
 	@Override
 	public boolean hasNext() {
@@ -169,5 +173,17 @@ public class ProjectIterator implements RAIterator{
 	public void addSelectItems(List<SelectItem> selectItems) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	@Override
+	public RAIterator getLeftIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RAIterator getRightIterator() {
+		// TODO Auto-generated method stub
+		return rightIterator;
 	}
 }

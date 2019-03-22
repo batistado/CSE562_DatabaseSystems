@@ -26,6 +26,10 @@ public class SelectIterator implements RAIterator{
 		rightIterator.resetIterator();
 	}
 
+	public Expression getExpression() {
+		return this.where;
+	}
+	
 	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
@@ -87,6 +91,18 @@ public class SelectIterator implements RAIterator{
 	public TupleSchema getSelectSchema() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public RAIterator getLeftIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RAIterator getRightIterator() {
+		// TODO Auto-generated method stub
+		return rightIterator;
 	}
 }
 

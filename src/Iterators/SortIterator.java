@@ -147,5 +147,17 @@ public class SortIterator implements RAIterator{
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public RAIterator getLeftIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public RAIterator getRightIterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
 
