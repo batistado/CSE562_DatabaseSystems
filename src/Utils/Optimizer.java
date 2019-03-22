@@ -71,6 +71,15 @@ public class Optimizer {
 						iterator.getExpression()
 					);
 		}
+		
+		else if (root instanceof LimitIterator) {
+			LimitIterator iterator = (LimitIterator) root;
+			
+			return new LimitIterator(
+						optimizeRA(iterator.getRightIterator()),
+						iterator.getLimit()
+					);
+		}
 		 
 		else {
 			return root;

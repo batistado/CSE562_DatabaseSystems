@@ -10,6 +10,7 @@ import java.util.Map;
 
 import Iterators.CrossProductIterator;
 import Iterators.FromIterator;
+import Iterators.LimitIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
 import Iterators.SelectIterator;
@@ -27,8 +28,10 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
 
@@ -88,7 +91,21 @@ public class Main {
 			innerIterator = evaluateFromTables(plainSelectQuery);
 		}
 		
-		return new ProjectIterator(innerIterator, plainSelectQuery.getSelectItems());
+		innerIterator = addProjection(innerIterator, plainSelectQuery.getSelectItems());
+		innerIterator = addLimit(innerIterator, plainSelectQuery.getLimit());
+		
+		return innerIterator;
+	}
+	
+	public static RAIterator addLimit(RAIterator iterator, Limit limit) {
+		if (limit == null)
+			return iterator;
+		
+		return new LimitIterator(iterator, limit);
+	}
+	
+	public static RAIterator addProjection(RAIterator iterator, List<SelectItem> selectItems) {
+		return new ProjectIterator(iterator, selectItems);
 	}
 	
 	public static RAIterator evaluateSubQuery(PlainSelect selectQuery) {
