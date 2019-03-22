@@ -48,13 +48,16 @@ public class utils {
 		return selectExpressionItem.getAlias() == null ? colName : selectExpressionItem.getAlias();
 	}
 	
-	public static PrimitiveValue filterRowForProjection(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, TupleSchema tupleSchema){
+	public static String getColumnName(Column column) {
+		String columnTableName = column.getTable().getName();
+		return columnTableName == null ? column.getColumnName() : columnTableName + "." + column.getColumnName();
+	}
+	
+	public static PrimitiveValue projectColumnValue(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, TupleSchema tupleSchema){
 		Eval eval = new Eval() {
 			@Override
 			public PrimitiveValue eval(Column col) throws SQLException {
-				String columnTableName = col.getTable().getName();
-				String fullColumnName = columnTableName == null ? col.getColumnName() : columnTableName + "." + col.getColumnName();
-				int colID = tupleSchema.getSchemaByName(fullColumnName).getColumnIndex();
+				int colID = tupleSchema.getSchemaByName(getColumnName(col)).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
 		};
@@ -73,9 +76,7 @@ public class utils {
 		Eval eval = new Eval() {
 			@Override
 			public PrimitiveValue eval(Column col) throws SQLException {
-				String columnTableName = col.getTable().getName();
-				String fullColumnName = columnTableName == null ? col.getColumnName() : columnTableName + "." + col.getColumnName();
-				int colID = tupleSchema.getSchemaByName(fullColumnName).getColumnIndex();
+				int colID = tupleSchema.getSchemaByName(getColumnName(col)).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
 		};

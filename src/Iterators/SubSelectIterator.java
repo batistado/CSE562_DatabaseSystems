@@ -126,7 +126,7 @@ public class SubSelectIterator implements RAIterator {
 		
 		for (SelectItem selectItem: selectItems) {
 			SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
-			resultRow.add(utils.filterRowForProjection(row, selectExpressionItem.getExpression(), fromSchema));
+			resultRow.add(utils.projectColumnValue(row, selectExpressionItem.getExpression(), fromSchema));
 		}
 		
 		return resultRow;

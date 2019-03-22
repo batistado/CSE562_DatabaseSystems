@@ -40,7 +40,7 @@ public class OnePassHashJoinIterator implements RAIterator{
 	public void initializeIterator() {
 		Expression leftCondition = ((EqualsTo) joinCondition).getLeftExpression();
 		while (leftIterator.hasNext()) {
-			PrimitiveValue key = utils.filterRowForProjection(leftIterator.next(), leftCondition, leftIterator.getIteratorSchema());
+			PrimitiveValue key = utils.projectColumnValue(leftIterator.next(), leftCondition, leftIterator.getIteratorSchema());
 			
 			ArrayList<ArrayList<PrimitiveValue>> bucket = joinMap.containsKey(key) ? joinMap.get(key): new ArrayList<ArrayList<PrimitiveValue>>();
 			bucket.add(leftIterator.next());
@@ -75,7 +75,7 @@ public class OnePassHashJoinIterator implements RAIterator{
 		Expression rightCondition = ((EqualsTo) joinCondition).getRightExpression();
 		PrimitiveValue key;
 		while (rightIterator.hasNext()) {
-			key = utils.filterRowForProjection(rightIterator.next(), rightCondition, rightIterator.getIteratorSchema());
+			key = utils.projectColumnValue(rightIterator.next(), rightCondition, rightIterator.getIteratorSchema());
 			
 			if (joinMap.containsKey(key)) {
 				ArrayList<ArrayList<PrimitiveValue>> bucket = joinMap.get(key);
