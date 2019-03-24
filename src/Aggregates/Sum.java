@@ -25,18 +25,28 @@ public class Sum implements Aggregate {
 		this.index = index;
 		this.expression = expression;
 	}
+	
+	public void setType(PrimitiveValue val) {
+		if (type == PrimitiveType.DOUBLE)
+			return;
+		
+		if (val.getType() == PrimitiveType.DOUBLE) {
+			type = PrimitiveType.DOUBLE;
+		}
+	}
 
 	public void addValue(PrimitiveValue newValue) {
+		setType(newValue);
+		
 		try {
 			if (type == PrimitiveType.LONG) {
 				accumulator = new LongValue(accumulator.toLong() + newValue.toLong());
 			} else {
-				accumulator = new DoubleValue(accumulator.toDouble() + newValue.toDouble());
+				accumulator = new DoubleValue(accumulator.getType() == PrimitiveType.LONG ? accumulator.toLong() : accumulator.toDouble() + newValue.toDouble());
 			}
 		} catch (InvalidPrimitive e) {
 			e.printStackTrace();
 		}
-
 	}
 	
 	public PrimitiveValue getValue() {

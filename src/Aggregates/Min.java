@@ -33,7 +33,18 @@ public class Min implements Aggregate {
 		this.expression = expression;
 	}
 
+	public void setType(PrimitiveValue val) {
+		if (type == PrimitiveType.DOUBLE || type == PrimitiveType.DATE)
+			return;
+		
+		if (val.getType() == PrimitiveType.DOUBLE) {
+			type = PrimitiveType.DOUBLE;
+		}
+	}
+
 	public void addValue(PrimitiveValue newValue) {
+		setType(newValue);
+		
 		try {
 			if (type == PrimitiveType.LONG) {
 				accumulator = new LongValue(newValue.toLong() < accumulator.toLong() ? newValue.toLong() : accumulator.toLong());
@@ -41,7 +52,7 @@ public class Min implements Aggregate {
 				accumulator = new DateValue(((Date) newValue).compareTo((Date) accumulator) < 0 ? ((Date) newValue).toString() : ((Date) accumulator).toString());
 			}
 			else {
-				accumulator = new DoubleValue(newValue.toDouble() < accumulator.toDouble() ? newValue.toDouble() : accumulator.toDouble());
+				accumulator = new DoubleValue(newValue.toDouble() < (accumulator.getType() == PrimitiveType.LONG ? accumulator.toLong() : accumulator.toDouble()) ? newValue.toDouble() : (accumulator.getType() == PrimitiveType.LONG ? accumulator.toLong() : accumulator.toDouble()));
 			}
 		} catch (InvalidPrimitive e) {
 			e.printStackTrace();

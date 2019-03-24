@@ -134,6 +134,7 @@ public class ProjectIterator implements RAIterator{
 	public Integer addAllTableColumnSchema(AllTableColumns allTableColumns, Integer columnNumber) {
 		Table table = allTableColumns.getTable();
 		String aliasedTableName = utils.getTableName(table);
+		Integer offset = columnNumber;
 		
 		Map<String, Schema> schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
 		
@@ -141,7 +142,7 @@ public class ProjectIterator implements RAIterator{
 			// Since default columns are referenced as X.A
 			String colName = !aliasedTableName.equals(table.getName()) ? aliasedTableName + "." + name.substring(name.lastIndexOf('.') + 1) : name;
 			Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(name);
-			selectSchema.addTuple(colName, s.getColumnIndex(), s.getDataType());
+			selectSchema.addTuple(colName, s.getColumnIndex() + offset, s.getDataType());
 			columnNumber++;
 		}
 		

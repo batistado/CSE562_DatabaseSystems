@@ -15,85 +15,75 @@ public class Optimizer {
 
 			if (selectIterator.getRightIterator() instanceof CrossProductIterator) {
 				CrossProductIterator crossProductIterator = (CrossProductIterator) selectIterator.getRightIterator();
-				
+
 				List<Expression> expressionList = splitAndClauses(selectIterator.getExpression());
-				Expression equiJoinCondition = getEquiJoinCondition(expressionList, crossProductIterator.getLeftIterator(), crossProductIterator.getRightIterator());
-				
+				Expression equiJoinCondition = getEquiJoinCondition(expressionList,
+						crossProductIterator.getLeftIterator(), crossProductIterator.getRightIterator());
+
 				if (equiJoinCondition != null) {
-					return new SelectIterator(
-							new OnePassHashJoinIterator(optimizeRA(crossProductIterator.getLeftIterator()), optimizeRA(crossProductIterator.getRightIterator()), equiJoinCondition),
-							mergeAndClauses(expressionList)
-							);
+					Expression mergedAndClauses = mergeAndClauses(expressionList);
+
+					return mergedAndClauses == null
+							? new OnePassHashJoinIterator(optimizeRA(crossProductIterator.getLeftIterator()),
+									optimizeRA(crossProductIterator.getRightIterator()), equiJoinCondition)
+							: new SelectIterator(
+									new OnePassHashJoinIterator(optimizeRA(crossProductIterator.getLeftIterator()),
+											optimizeRA(crossProductIterator.getRightIterator()), equiJoinCondition),
+									mergedAndClauses);
 				}
-				
-				return new SelectIterator(
-						new CrossProductIterator(optimizeRA(crossProductIterator.getLeftIterator()), optimizeRA(crossProductIterator.getRightIterator())),
-						selectIterator.getExpression()
-					);
+
+				return new SelectIterator(new CrossProductIterator(optimizeRA(crossProductIterator.getLeftIterator()),
+						optimizeRA(crossProductIterator.getRightIterator())), selectIterator.getExpression());
 			}
-			
-			return new SelectIterator(
-					optimizeRA(selectIterator.getRightIterator()), selectIterator.getExpression()
-					);
+
+			return new SelectIterator(optimizeRA(selectIterator.getRightIterator()), selectIterator.getExpression());
 		}
-		
-		else if(root instanceof ProjectIterator) {
+
+		else if (root instanceof ProjectIterator) {
 			ProjectIterator projectIterator = (ProjectIterator) root;
-			return new ProjectIterator(
-					optimizeRA(projectIterator.getRightIterator()), projectIterator.getSelectItems());
+			return new ProjectIterator(optimizeRA(projectIterator.getRightIterator()),
+					projectIterator.getSelectItems());
 		}
-		
-		else if(root instanceof SubQueryIterator) {
+
+		else if (root instanceof SubQueryIterator) {
 			SubQueryIterator subQueryIterator = (SubQueryIterator) root;
-			
-			return new SubQueryIterator(
-					optimizeRA(subQueryIterator.getRightIterator())
-					);
+
+			return new SubQueryIterator(optimizeRA(subQueryIterator.getRightIterator()));
 		}
-		
+
 		else if (root instanceof UnionIterator) {
 			UnionIterator unionIterator = (UnionIterator) root;
-			
+
 			List<RAIterator> resultIterators = new ArrayList<RAIterator>();
-			for(RAIterator iterator : unionIterator.getIterators()) {
+			for (RAIterator iterator : unionIterator.getIterators()) {
 				resultIterators.add(optimizeRA(iterator));
 			}
-			
+
 			return new UnionIterator(resultIterators);
 		}
-		
+
 		else if (root instanceof OnePassHashJoinIterator) {
 			OnePassHashJoinIterator iterator = (OnePassHashJoinIterator) root;
-			
-			return new OnePassHashJoinIterator(
-						optimizeRA(iterator.getLeftIterator()),
-						optimizeRA(iterator.getRightIterator()),
-						iterator.getExpression()
-					);
+
+			return new OnePassHashJoinIterator(optimizeRA(iterator.getLeftIterator()),
+					optimizeRA(iterator.getRightIterator()), iterator.getExpression());
 		}
-		
+
 		else if (root instanceof LimitIterator) {
 			LimitIterator iterator = (LimitIterator) root;
-			
-			return new LimitIterator(
-						optimizeRA(iterator.getRightIterator()),
-						iterator.getLimit()
-					);
+
+			return new LimitIterator(optimizeRA(iterator.getRightIterator()), iterator.getLimit());
 		}
-		
+
 		else if (root instanceof AggregationIterator) {
 			AggregationIterator iterator = (AggregationIterator) root;
-			
-			return new AggregationIterator(
-						optimizeRA(iterator.getRightIterator()),
-						iterator.getSelectItems()
-					);
+
+			return new AggregationIterator(optimizeRA(iterator.getRightIterator()), iterator.getSelectItems());
 		}
-		 
+
 		else {
 			return root;
 		}
-		
 
 	}
 
@@ -110,45 +100,49 @@ public class Optimizer {
 
 		return splitExpressions;
 	}
-	
+
 	public static Expression mergeAndClauses(List<Expression> expressionList) {
 		if (expressionList.isEmpty()) {
 			return null;
 		}
-		
+
 		if (expressionList.size() == 1) {
 			return expressionList.remove(0);
 		}
-		
-		
+
 		Expression leftExpression = expressionList.get(0);
-		
-		for(int i = 1; i < expressionList.size(); i++) {
+
+		for (int i = 1; i < expressionList.size(); i++) {
 			leftExpression = new AndExpression(leftExpression, expressionList.get(i));
-			
+
 		}
-		
+
 		return leftExpression;
 	}
-	
-	public static Expression getEquiJoinCondition(List<Expression> expressions, RAIterator leftIterator, RAIterator rightIterator) {
+
+	public static Expression getEquiJoinCondition(List<Expression> expressions, RAIterator leftIterator,
+			RAIterator rightIterator) {
 		if (expressions.isEmpty()) {
 			return null;
 		}
-		
-		for(Expression e: expressions) {
+
+		for (Expression e : expressions) {
 			if (e instanceof EqualsTo) {
 				EqualsTo equalsToExpression = (EqualsTo) e;
-				
-				if (equalsToExpression.getLeftExpression() instanceof Column && equalsToExpression.getRightExpression() instanceof Column && 
-						leftIterator.getIteratorSchema().containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression())) && rightIterator.getIteratorSchema().containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))) {
+
+				if (equalsToExpression.getLeftExpression() instanceof Column
+						&& equalsToExpression.getRightExpression() instanceof Column
+						&& leftIterator.getIteratorSchema()
+								.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression()))
+						&& rightIterator.getIteratorSchema()
+								.containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))) {
 					expressions.remove(e);
 					return e;
 				}
 			}
 		}
-		
+
 		return null;
-		
+
 	}
 }
