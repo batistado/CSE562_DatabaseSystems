@@ -10,6 +10,7 @@ import java.util.Map;
 import Models.Schema;
 import Models.TupleSchema;
 import Utils.Sort;
+import dubstep.Main;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LongValue;
@@ -25,11 +26,15 @@ public class SortIterator implements RAIterator{
 	private String line;
 	private TupleSchema fromSchema;
 	private String fileName;
+	private ArrayList<ArrayList<PrimitiveValue>> buffer = null;
+	private Integer bufferIndex;
 	
 	public SortIterator (RAIterator rightIterator, List<OrderByElement> orderByElements) {
 		this.rightIterator = rightIterator;
 		this.setIteratorSchema();
-		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR);
+		this.buffer = new ArrayList<ArrayList<PrimitiveValue>>();
+		
+		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		fileName = s.sortData();
 		initializeReader();
 	}
@@ -37,7 +42,11 @@ public class SortIterator implements RAIterator{
 	private void initializeReader() {
 		// TODO Auto-generated method stub
 		try {
-			reader = new BufferedReader(new FileReader(DIR + fileName));
+			if (Main.isInMemory) {
+				bufferIndex = -1;
+			} else {
+				reader = new BufferedReader(new FileReader(DIR + fileName));
+			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -46,7 +55,9 @@ public class SortIterator implements RAIterator{
 
 	public void resetIterator() {
 		try {
-			reader.close();
+			if (!Main.isInMemory)
+				reader.close();
+			
 			initializeReader();
 			
 		} catch (IOException e) {
@@ -59,6 +70,18 @@ public class SortIterator implements RAIterator{
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
+			if (Main.isInMemory) {
+				if (++bufferIndex >= buffer.size()) {
+					row = null;
+					return false;
+				}
+				
+				row = buffer.get(bufferIndex);
+				return true;
+			}
+			
+			
+			
 			while ((line = reader.readLine()) != null) {
 				row = getLeftRow();
 				return true;

@@ -16,6 +16,7 @@ import java.util.PriorityQueue;
 
 import Iterators.RAIterator;
 import Models.TupleSchema;
+import dubstep.Main;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LongValue;
@@ -30,16 +31,17 @@ public class Sort {
 	private List<OrderByElement> orderByElements;
 	private String outputFile;
 	private RAIterator rightIterator = null;
-	private ArrayList<ArrayList<PrimitiveValue>> rows = new ArrayList<ArrayList<PrimitiveValue>>();
+	private ArrayList<ArrayList<PrimitiveValue>> rows;
 	private Comparator<BrIterator> customComparator = null;
 	private TupleSchema fromSchema;
 	private String directory;
 	
-	public Sort(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema, String directory){
+	public Sort(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema, String directory, ArrayList<ArrayList<PrimitiveValue>> buffer){
 		this.rightIterator = rightIterator;
 		this.orderByElements = orderByElements;
 		this.fromSchema = fromSchema;
 		this.directory = directory;
+		this.rows = buffer;
 	}
 	
 	public int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b) {
@@ -92,10 +94,22 @@ public class Sort {
 	}
 	
 	public String sortData(){
+		if (Main.isInMemory)
+			return sortInMemory();
+		
 		readData();
 		this.customComparator = createComparator();
 		mergeFiles();
 		return outputFile;
+	}
+	
+	public String sortInMemory() {
+		while(rightIterator.hasNext()) {
+			rows.add(rightIterator.next());
+		}
+		
+		sort();
+		return null;
 	}
 	
 	public void readData() {

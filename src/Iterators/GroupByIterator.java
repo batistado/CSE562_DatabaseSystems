@@ -10,6 +10,7 @@ import java.util.Map;
 import Models.Schema;
 import Models.TupleSchema;
 import Utils.Sort;
+import dubstep.Main;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.LongValue;
@@ -28,10 +29,14 @@ public class GroupByIterator implements RAIterator{
 	private String fileName;
 	private List<Column> groupByColumns;
 	private List<OrderByElement> orderByElements;
+	private ArrayList<ArrayList<PrimitiveValue>> buffer = null;
+	private Integer bufferIndex;
 	
 	public GroupByIterator (RAIterator rightIterator, List<Column> groupByColumns) {
 		this.rightIterator = rightIterator;
 		this.groupByColumns = groupByColumns;
+		this.buffer = new ArrayList<ArrayList<PrimitiveValue>>();
+		
 		this.setIteratorSchema();
 		
 		this.orderByElements = new ArrayList<OrderByElement>();
@@ -46,7 +51,7 @@ public class GroupByIterator implements RAIterator{
 			orderByElements.add(o);
 		}
 		
-		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR);
+		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		fileName = s.sortData();
 		
 		initializeReader();
@@ -55,7 +60,11 @@ public class GroupByIterator implements RAIterator{
 	private void initializeReader() {
 		// TODO Auto-generated method stub
 		try {
-			reader = new BufferedReader(new FileReader(DIR + fileName));
+			if (Main.isInMemory) {
+				bufferIndex = -1;
+			} else {
+				reader = new BufferedReader(new FileReader(DIR + fileName));
+			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -64,9 +73,10 @@ public class GroupByIterator implements RAIterator{
 
 	public void resetIterator() {
 		try {
-			reader.close();
-			initializeReader();
+			if (!Main.isInMemory)
+				reader.close();
 			
+			initializeReader();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -77,6 +87,17 @@ public class GroupByIterator implements RAIterator{
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
+			if (Main.isInMemory) {
+				if (++bufferIndex >= buffer.size()) {
+					row = null;
+					return false;
+				}
+				
+				row = buffer.get(bufferIndex);
+				return true;
+			}
+			
+			
 			while ((line = reader.readLine()) != null) {
 				row = getLeftRow();
 				return true;
