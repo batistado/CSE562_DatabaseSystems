@@ -56,7 +56,8 @@ public class Main {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
 					Select selectQuery = (Select) queryStatement;
-					RAIterator queryIterator = Optimizer.optimizeRA(evaluateQuery(selectQuery));
+					//RAIterator queryIterator = Optimizer.optimizeRA(evaluateQuery(selectQuery));
+					RAIterator queryIterator = evaluateQuery(selectQuery);
 					printer(queryIterator);
 				}
 				else if (queryStatement instanceof CreateTable) {
