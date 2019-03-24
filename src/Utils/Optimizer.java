@@ -140,7 +140,7 @@ public class Optimizer {
 			if (e instanceof EqualsTo) {
 				EqualsTo equalsToExpression = (EqualsTo) e;
 				
-				if (equalsToExpression.getLeftExpression() instanceof Column && equalsToExpression.getLeftExpression() instanceof Column && 
+				if (equalsToExpression.getLeftExpression() instanceof Column && equalsToExpression.getRightExpression() instanceof Column && 
 						leftIterator.getIteratorSchema().containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression())) && rightIterator.getIteratorSchema().containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))) {
 					expressions.remove(e);
 					return e;

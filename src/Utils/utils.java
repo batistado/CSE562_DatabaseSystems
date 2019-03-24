@@ -117,6 +117,9 @@ public class utils {
 		
 		String name = "";
 		
+		if (!(e instanceof BinaryExpression))
+			return e.toString();
+		
 		BinaryExpression binaryExpression = (BinaryExpression) e;
 		
 		name += getNameFromExpression(binaryExpression.getLeftExpression());
