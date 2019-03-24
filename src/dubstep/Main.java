@@ -56,8 +56,8 @@ public class Main {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
 					Select selectQuery = (Select) queryStatement;
-					//RAIterator queryIterator = Optimizer.optimizeRA(evaluateQuery(selectQuery));
-					RAIterator queryIterator = evaluateQuery(selectQuery);
+					RAIterator queryIterator = Optimizer.optimizeRA(evaluateQuery(selectQuery));
+					//RAIterator queryIterator = evaluateQuery(selectQuery);
 					printer(queryIterator);
 				}
 				else if (queryStatement instanceof CreateTable) {
@@ -108,8 +108,8 @@ public class Main {
 		List<Column> groupByColumns = plainSelect.getGroupByColumnReferences();
 		
 		if (groupByColumns != null && !groupByColumns.isEmpty()) {
-			//RAIterator aggIterator = new AggregationIterator(new GroupByIterator(Optimizer.optimizeRA(iterator), groupByColumns), plainSelect.getSelectItems());
-			RAIterator aggIterator = new AggregationIterator(new GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
+			RAIterator aggIterator = new AggregationIterator(new GroupByIterator(Optimizer.optimizeRA(iterator), groupByColumns), plainSelect.getSelectItems());
+			//RAIterator aggIterator = new AggregationIterator(new GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
 			
 			return plainSelect.getHaving() == null ? aggIterator : new SelectIterator(aggIterator, plainSelect.getHaving());
 		}
@@ -137,8 +137,8 @@ public class Main {
 			return iterator;
 		
 		
-		//return new SortIterator(Optimizer.optimizeRA(iterator), orderByElements);
-		return new SortIterator(iterator, orderByElements);
+		return new SortIterator(Optimizer.optimizeRA(iterator), orderByElements);
+		//return new SortIterator(iterator, orderByElements);
 	}
 	
 	public static RAIterator evaluateSubQuery(PlainSelect selectQuery) {
