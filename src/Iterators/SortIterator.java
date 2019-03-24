@@ -38,7 +38,6 @@ public class SortIterator implements RAIterator{
 		// TODO Auto-generated method stub
 		try {
 			reader = new BufferedReader(new FileReader(DIR + fileName));
-			System.out.println(DIR + fileName);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -61,7 +60,6 @@ public class SortIterator implements RAIterator{
 		// TODO Auto-generated method stub
 		try {
 			while ((line = reader.readLine()) != null) {
-				System.out.println("MY LINE:" + line);
 				row = getLeftRow();
 				return true;
 			}

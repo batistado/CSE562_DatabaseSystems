@@ -73,7 +73,7 @@ public class Main {
 	}
 		
 	public static void createTable(CreateTable table) {
-		if (!tableSchemas.containsKey(table.getTable().getName())) {
+//		if (!tableSchemas.containsKey(table.getTable().getName())) {
 			TupleSchema ts = new TupleSchema();
 			Integer i = 0;
 			for (ColumnDefinition columnDefinition : table.getColumnDefinitions()) {
@@ -81,7 +81,7 @@ public class Main {
 				i++;
 			}
 			tableSchemas.put(table.getTable().getName(), ts);
-		}
+//		}
 	}
 	
 	public static RAIterator evaluatePlainSelect(PlainSelect plainSelectQuery) {
