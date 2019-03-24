@@ -1,13 +1,17 @@
 package Utils;
 
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
 import Models.TupleSchema;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.PrimitiveValue;
@@ -141,6 +145,19 @@ public class utils {
 		return name;
 	}
 	
+	public static Integer tsToSec8601(String timestamp){
+	  if(timestamp == null) return null;
+	  
+	  try {
+	    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+	    Date dt = sdf.parse(timestamp);
+	    long epoch = dt.getTime();
+	    return (int)(epoch/1000);
+	  } catch(ParseException e) {
+	     return null;
+	  }
+	}
+	
 	public static Boolean filterRow(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, TupleSchema tupleSchema){
 		Eval eval = new Eval() {
 			@Override
@@ -151,6 +168,11 @@ public class utils {
 			
 			@Override
 			public PrimitiveValue eval(Function function) throws SQLException {
+				if (function.getName().equals("DATE")) {
+					String dateString = getFunctionName(function);
+					return new DateValue(dateString.substring(1, dateString.length() - 1));
+				}
+				
 				int colID = tupleSchema.getSchemaByName(getFunctionName(function)).getColumnIndex();
 				return unfilteredRow.get(colID);
 			}
