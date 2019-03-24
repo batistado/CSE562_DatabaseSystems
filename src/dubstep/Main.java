@@ -73,15 +73,13 @@ public class Main {
 	}
 		
 	public static void createTable(CreateTable table) {
-//		if (!tableSchemas.containsKey(table.getTable().getName())) {
-			TupleSchema ts = new TupleSchema();
-			Integer i = 0;
-			for (ColumnDefinition columnDefinition : table.getColumnDefinitions()) {
-				ts.addTuple(table.getTable().getName() + "." + columnDefinition.getColumnName(), i, columnDefinition.getColDataType().getDataType());
-				i++;
-			}
-			tableSchemas.put(table.getTable().getName(), ts);
-//		}
+		TupleSchema ts = new TupleSchema();
+		Integer i = 0;
+		for (ColumnDefinition columnDefinition : table.getColumnDefinitions()) {
+			ts.addTuple(table.getTable().getName() + "." + columnDefinition.getColumnName(), i, columnDefinition.getColDataType().getDataType().toLowerCase());
+			i++;
+		}
+		tableSchemas.put(table.getTable().getName(), ts);
 	}
 	
 	public static RAIterator evaluatePlainSelect(PlainSelect plainSelectQuery) {
