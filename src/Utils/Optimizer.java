@@ -80,6 +80,15 @@ public class Optimizer {
 						iterator.getLimit()
 					);
 		}
+		
+		else if (root instanceof AggregationIterator) {
+			AggregationIterator iterator = (AggregationIterator) root;
+			
+			return new AggregationIterator(
+						optimizeRA(iterator.getRightIterator()),
+						iterator.getSelectItems()
+					);
+		}
 		 
 		else {
 			return root;

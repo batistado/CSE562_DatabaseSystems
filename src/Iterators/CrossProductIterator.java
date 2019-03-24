@@ -40,8 +40,10 @@ public class CrossProductIterator implements RAIterator{
 	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub	
-		if (leftRow == null && !leftIterator.hasNext())
+		if (leftRow == null && !leftIterator.hasNext()) {
 			return false;
+		}
+			
 
 		if (!rightIterator.hasNext()) {
 			rightIterator.resetIterator();
@@ -53,10 +55,11 @@ public class CrossProductIterator implements RAIterator{
 				return false;
 		}
 		
-		
-		
 		rightRow = rightIterator.next();
 		leftRow = leftIterator.next();
+		
+		if (leftRow == null)
+			return false;
 		
 		return true;
 	}

@@ -124,7 +124,7 @@ public class ProjectIterator implements RAIterator{
 				} else {
 					BinaryExpression binaryExpression = (BinaryExpression) expression;
 					colDatatype = utils.getExpressionColumnDatatype(binaryExpression, fromSchema);
-					colName = selectExpressionItem.getAlias();
+					colName = utils.getColumnName(selectExpressionItem, utils.getRandomString());
 					selectSchema.addTuple(colName, columnNumber, colDatatype);
 				}
 				columnNumber++;

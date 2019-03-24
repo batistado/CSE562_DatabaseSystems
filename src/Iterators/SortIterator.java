@@ -45,7 +45,14 @@ public class SortIterator implements RAIterator{
 	}
 
 	public void resetIterator() {
-		rightIterator.resetIterator();
+		try {
+			reader.close();
+			initializeReader();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -156,7 +163,7 @@ public class SortIterator implements RAIterator{
 	@Override
 	public RAIterator getRightIterator() {
 		// TODO Auto-generated method stub
-		return null;
+		return rightIterator;
 	}
 }
 

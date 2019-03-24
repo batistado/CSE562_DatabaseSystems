@@ -8,8 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import Iterators.AggregationIterator;
 import Iterators.CrossProductIterator;
 import Iterators.FromIterator;
+import Iterators.GroupByIterator;
 import Iterators.LimitIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
@@ -20,9 +22,11 @@ import Iterators.UnionIterator;
 import Utils.*;
 import Models.TupleSchema;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
@@ -33,6 +37,7 @@ import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
@@ -93,11 +98,31 @@ public class Main {
 			innerIterator = evaluateFromTables(plainSelectQuery);
 		}
 		
-		innerIterator = addProjection(innerIterator, plainSelectQuery.getSelectItems());
+		innerIterator = addProjection(innerIterator, plainSelectQuery);
 		innerIterator = addSort(innerIterator, plainSelectQuery.getOrderByElements());
 		innerIterator = addLimit(innerIterator, plainSelectQuery.getLimit());
 		
 		return innerIterator;
+	}
+	
+	public static RAIterator addProjection(RAIterator iterator, PlainSelect plainSelect) {
+		List<Column> groupByColumns = plainSelect.getGroupByColumnReferences();
+		
+		if (groupByColumns != null && !groupByColumns.isEmpty()) {
+			RAIterator aggIterator = new AggregationIterator(new GroupByIterator(Optimizer.optimizeRA(iterator), groupByColumns), plainSelect.getSelectItems());
+			
+			return plainSelect.getHaving() == null ? aggIterator : new SelectIterator(aggIterator, plainSelect.getHaving());
+		}
+		
+		boolean hasAggregation = false;
+		for(SelectItem selectItem : plainSelect.getSelectItems()) {
+			if (selectItem instanceof SelectExpressionItem && ((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
+				hasAggregation = true;
+				break;
+			}
+		}
+		
+		return hasAggregation ? new AggregationIterator(iterator, plainSelect.getSelectItems()) : new ProjectIterator(iterator, plainSelect.getSelectItems());
 	}
 	
 	public static RAIterator addLimit(RAIterator iterator, Limit limit) {
@@ -113,10 +138,6 @@ public class Main {
 		
 		
 		return new SortIterator(Optimizer.optimizeRA(iterator), orderByElements);
-	}
-	
-	public static RAIterator addProjection(RAIterator iterator, List<SelectItem> selectItems) {
-		return new ProjectIterator(iterator, selectItems);
 	}
 	
 	public static RAIterator evaluateSubQuery(PlainSelect selectQuery) {
