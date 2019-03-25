@@ -117,7 +117,7 @@ public class Sort {
 		while(rightIterator.hasNext()) {
 			count++;
 			rows.add(rightIterator.next());
-			if(count == 1000000) {
+			if(count == 500000) {
 				count = 0;
 				sort();
 				writeBuffer();

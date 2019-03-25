@@ -2,11 +2,12 @@ package Utils;
 
 import java.util.*;
 import Iterators.*;
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.schema.Table;
 
 public class Optimizer {
 	public static RAIterator optimizeRA(RAIterator root) {
@@ -16,24 +17,7 @@ public class Optimizer {
 			if (selectIterator.getRightIterator() instanceof CrossProductIterator) {
 				CrossProductIterator crossProductIterator = (CrossProductIterator) selectIterator.getRightIterator();
 
-				List<Expression> expressionList = splitAndClauses(selectIterator.getExpression());
-				Expression equiJoinCondition = getEquiJoinCondition(expressionList,
-						crossProductIterator.getLeftIterator(), crossProductIterator.getRightIterator());
-
-				if (equiJoinCondition != null) {
-					Expression mergedAndClauses = mergeAndClauses(expressionList);
-
-					return mergedAndClauses == null
-							? new OnePassHashJoinIterator(optimizeRA(crossProductIterator.getLeftIterator()),
-									optimizeRA(crossProductIterator.getRightIterator()), equiJoinCondition)
-							: new SelectIterator(
-									new OnePassHashJoinIterator(optimizeRA(crossProductIterator.getLeftIterator()),
-											optimizeRA(crossProductIterator.getRightIterator()), equiJoinCondition),
-									mergedAndClauses);
-				}
-
-				return new SelectIterator(new CrossProductIterator(optimizeRA(crossProductIterator.getLeftIterator()),
-						optimizeRA(crossProductIterator.getRightIterator())), selectIterator.getExpression());
+				return optimizeSelectionOverCross(crossProductIterator, selectIterator);
 			}
 
 			return new SelectIterator(optimizeRA(selectIterator.getRightIterator()), selectIterator.getExpression());
@@ -136,6 +120,86 @@ public class Optimizer {
 								.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression()))
 						&& rightIterator.getIteratorSchema()
 								.containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))) {
+					expressions.remove(e);
+					return e;
+				}
+			}
+		}
+
+		return null;
+
+	}
+
+	public static RAIterator optimizeSelectionOverCross(CrossProductIterator crossProductIterator,
+			SelectIterator selectIterator) {
+		List<Expression> expressionList = splitAndClauses(selectIterator.getExpression());
+
+		RAIterator iterator = optimizeSelectionOverCrossHelper(crossProductIterator, expressionList);
+		Expression expression = mergeAndClauses(expressionList);
+		
+		return expression == null ? iterator : new SelectIterator(iterator, expression);
+	}
+
+	public static RAIterator optimizeSelectionOverCrossHelper(CrossProductIterator crossProductIterator,
+			List<Expression> expressionList) {
+		if (expressionList.isEmpty()) {
+			return crossProductIterator;
+		}
+
+		RAIterator leftIterator = crossProductIterator.getLeftIterator();
+		Expression selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
+
+		if (selectExpression != null) {
+			leftIterator = new SelectIterator(leftIterator, selectExpression);
+		}
+
+		if (crossProductIterator.getRightIterator() instanceof CrossProductIterator) {
+			RAIterator rightIterator = optimizeSelectionOverCrossHelper(
+					(CrossProductIterator) crossProductIterator.getRightIterator(), expressionList);
+
+			Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
+
+			if (equiJoinCondition != null) {
+				return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+			}
+
+			return new CrossProductIterator(leftIterator, rightIterator);
+		}
+
+		RAIterator rightIterator = crossProductIterator.getRightIterator();
+		selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
+
+		if (selectExpression != null) {
+			rightIterator = new SelectIterator(rightIterator, selectExpression);
+		}
+		
+		Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
+
+		if (equiJoinCondition != null) {
+			return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+		}
+
+		return new CrossProductIterator(leftIterator, rightIterator);
+
+	}
+
+	public static Expression getIteratorSpecificCondition(List<Expression> expressions, RAIterator iterator) {
+		if (expressions.isEmpty()) {
+			return null;
+		}
+
+		for (Expression e : expressions) {
+			if (e instanceof BinaryExpression) {
+				BinaryExpression equalsToExpression = (BinaryExpression) e;
+
+				if ((equalsToExpression.getLeftExpression() instanceof Column
+						&& equalsToExpression.getRightExpression() instanceof PrimitiveValue
+						&& iterator.getIteratorSchema()
+								.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression())))
+						|| (equalsToExpression.getRightExpression() instanceof Column
+								&& equalsToExpression.getLeftExpression() instanceof PrimitiveValue
+								&& iterator.getIteratorSchema().containsKey(
+										utils.getColumnName((Column) equalsToExpression.getRightExpression())))) {
 					expressions.remove(e);
 					return e;
 				}
