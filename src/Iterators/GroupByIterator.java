@@ -146,15 +146,7 @@ public class GroupByIterator implements RAIterator{
 		if (rightIterator == null)
 			return;
 		
-		TupleSchema rightIteratorSchema = rightIterator.getIteratorSchema();
-		fromSchema = new TupleSchema();
-		
-		Map<String, Schema> schemaByName = rightIteratorSchema.schemaByName();
-		for (String name: schemaByName.keySet()) {
-			String colName = name;
-			Schema s = rightIteratorSchema.getSchemaByName(name);
-			fromSchema.addTuple(colName, s.getColumnIndex(), s.getDataType());
-		}
+		fromSchema = rightIterator.getIteratorSchema();
 	}
 
 	@Override

@@ -20,17 +20,7 @@ public class SubQueryIterator implements RAIterator {
 	}
 	
 	public void setIteratorSchema() {
-		TupleSchema rightIteratorSchema = rightIterator.getIteratorSchema();
-		fromSchema = new TupleSchema();
-		
-		// Copy schema
-		Map<String, Schema> schemaByName = rightIteratorSchema.schemaByName();
-		
-		for (String name: schemaByName.keySet()) {
-			String colName = name;
-			Schema s = rightIteratorSchema.getSchemaByName(name);
-			fromSchema.addTuple(colName, s.getColumnIndex(), s.getDataType());
-		}
+		fromSchema = rightIterator.getIteratorSchema();
 	}
 
 	@Override
