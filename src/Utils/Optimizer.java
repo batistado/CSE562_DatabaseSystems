@@ -2,6 +2,7 @@ package Utils;
 
 import java.util.*;
 import Iterators.*;
+import dubstep.Main;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
@@ -157,10 +158,12 @@ public class Optimizer {
 			RAIterator rightIterator = optimizeSelectionOverCrossHelper(
 					(CrossProductIterator) crossProductIterator.getRightIterator(), expressionList);
 
-			Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
-
-			if (equiJoinCondition != null) {
-				return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+			if (Main.isInMemory) {
+				Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
+	
+				if (equiJoinCondition != null) {
+					return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+				}
 			}
 
 			return new CrossProductIterator(leftIterator, rightIterator);
@@ -173,10 +176,12 @@ public class Optimizer {
 			rightIterator = new SelectIterator(rightIterator, selectExpression);
 		}
 		
-		Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
-
-		if (equiJoinCondition != null) {
-			return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+		if (Main.isInMemory) {
+			Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
+	
+			if (equiJoinCondition != null) {
+				return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+			}
 		}
 
 		return new CrossProductIterator(leftIterator, rightIterator);
