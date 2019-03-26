@@ -36,7 +36,9 @@ public class SortIterator implements RAIterator{
 		
 		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		fileName = s.sortData();
+		this.rightIterator = null;
 		initializeReader();
+		System.gc();
 	}
 	
 	private void initializeReader() {
@@ -54,16 +56,7 @@ public class SortIterator implements RAIterator{
 	}
 
 	public void resetIterator() {
-		try {
-			if (!Main.isInMemory)
-				reader.close();
-			
-			initializeReader();
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		initializeReader();
 	}
 
 	@Override
@@ -80,14 +73,13 @@ public class SortIterator implements RAIterator{
 				return true;
 			}
 			
-			
-			
 			while ((line = reader.readLine()) != null) {
 				row = getLeftRow();
 				return true;
 			}
 			
 			row = null;
+			reader.close();
 			return false;
 		
 		} catch (IOException e) {

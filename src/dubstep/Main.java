@@ -73,6 +73,7 @@ public class Main {
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
 				}
+				System.gc();
 				System.out.println("$> ");
 				parser = new CCJSqlParser(System.in);
 			}

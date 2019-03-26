@@ -41,7 +41,13 @@ public class Sort {
 		this.orderByElements = orderByElements;
 		this.fromSchema = fromSchema;
 		this.directory = directory;
-		this.rows = buffer;
+		
+		if (!Main.isInMemory) {
+			this.rows = new ArrayList<ArrayList<PrimitiveValue>>();
+			buffer = null;
+		} else {
+			this.rows = buffer;
+		}
 	}
 	
 	public int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b) {

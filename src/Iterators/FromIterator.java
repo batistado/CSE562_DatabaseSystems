@@ -41,14 +41,7 @@ public class FromIterator implements RAIterator{
 	}
 	
 	public void resetIterator() {
-		try {
-			reader.close();
-			initializeReader();
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		initializeReader();
 	}
 	
 	public void initializeReader() {
@@ -69,6 +62,7 @@ public class FromIterator implements RAIterator{
 				}
 				
 				row = null;
+				reader.close();
 				return false;
 			
 		} catch (IOException e) {

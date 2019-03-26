@@ -41,6 +41,7 @@ public class GroupByIterator implements RAIterator{
 		
 		this.orderByElements = new ArrayList<OrderByElement>();
 		this.initializeIterator();
+		System.gc();
 	}
 	
 	private void initializeIterator() {
@@ -53,6 +54,7 @@ public class GroupByIterator implements RAIterator{
 		
 		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		fileName = s.sortData();
+		this.rightIterator = null;
 		
 		initializeReader();
 	}
@@ -72,15 +74,7 @@ public class GroupByIterator implements RAIterator{
 	}
 
 	public void resetIterator() {
-		try {
-			if (!Main.isInMemory)
-				reader.close();
-			
-			initializeReader();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		initializeReader();
 	}
 
 	@Override
@@ -104,6 +98,7 @@ public class GroupByIterator implements RAIterator{
 			}
 			
 			row = null;
+			reader.close();
 			return false;
 		
 		} catch (IOException e) {
