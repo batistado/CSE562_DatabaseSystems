@@ -47,7 +47,7 @@ public class SortIterator implements RAIterator{
 			if (Main.isInMemory) {
 				bufferIndex = -1;
 			} else {
-				reader = new BufferedReader(new FileReader(DIR + fileName));
+				reader = new BufferedReader(new FileReader(fileName));
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
