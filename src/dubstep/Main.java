@@ -45,7 +45,7 @@ import net.sf.jsqlparser.statement.select.Union;
 public class Main {
 	public static Map<String, TupleSchema> tableSchemas = new HashMap<>();
 	public static boolean isInMemory;
-	public static Integer sortedRunSize = 10;
+	public static Integer sortedRunSize = 2;
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
