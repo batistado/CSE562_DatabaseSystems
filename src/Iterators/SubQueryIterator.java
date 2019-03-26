@@ -17,6 +17,7 @@ public class SubQueryIterator implements RAIterator {
 	public SubQueryIterator(RAIterator rightIterator) {
 		this.rightIterator = rightIterator;
 		setIteratorSchema();
+		System.gc();
 	}
 	
 	public void setIteratorSchema() {

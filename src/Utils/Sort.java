@@ -123,7 +123,7 @@ public class Sort {
 		while(rightIterator.hasNext()) {
 			count++;
 			rows.add(rightIterator.next());
-			if(count == 5000) {
+			if(count == 500) {
 				count = 0;
 				sort();
 				writeBuffer();
@@ -190,9 +190,9 @@ public class Sort {
 			}
 			outputFile = temp.getName();
 			
-			for(File tempFileI: tempFiles) {
-				tempFileI.delete();
-			}
+//			for(File tempFileI: tempFiles) {
+//				tempFileI.delete();
+//			}
 			
 			bw.close();
 		} catch (IOException e) {

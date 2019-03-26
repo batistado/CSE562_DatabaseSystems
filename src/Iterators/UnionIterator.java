@@ -15,6 +15,7 @@ public class UnionIterator implements RAIterator {
 	public UnionIterator(List<RAIterator> iterators) {
 		this.iterators = iterators;
 		currentIteratorIndex = 0;
+		System.gc();
 	}
 
 	@Override

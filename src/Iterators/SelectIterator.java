@@ -20,6 +20,7 @@ public class SelectIterator implements RAIterator{
 		this.rightIterator = rightIterator;
 		this.where = where;
 		this.setIteratorSchema();
+		System.gc();
 	}
 	
 	public void resetIterator() {

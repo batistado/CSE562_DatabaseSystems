@@ -31,6 +31,7 @@ public class OnePassHashJoinIterator implements RAIterator{
 		this.rightIterator = rightIterator;
 		this.setIteratorSchema();
 		this.initializeIterator();
+		System.gc();
 	}
 	
 	public Expression getExpression() {
