@@ -73,13 +73,16 @@ public class SortIterator implements RAIterator{
 				return true;
 			}
 			
-			while ((line = reader.readLine()) != null) {
+			while (reader != null && (line = reader.readLine()) != null) {
 				row = getLeftRow();
 				return true;
 			}
 			
-			row = null;
-			reader.close();
+			if (reader != null) {
+				row = null;
+				reader.close();
+				reader = null;
+			}
 			return false;
 		
 		} catch (IOException e) {

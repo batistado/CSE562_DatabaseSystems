@@ -198,11 +198,11 @@ public class Optimizer {
 				BinaryExpression equalsToExpression = (BinaryExpression) e;
 
 				if ((equalsToExpression.getLeftExpression() instanceof Column
-						&& equalsToExpression.getRightExpression() instanceof PrimitiveValue
+						&& ! (equalsToExpression.getRightExpression() instanceof Column)
 						&& iterator.getIteratorSchema()
 								.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression())))
 						|| (equalsToExpression.getRightExpression() instanceof Column
-								&& equalsToExpression.getLeftExpression() instanceof PrimitiveValue
+								&& ! (equalsToExpression.getLeftExpression() instanceof Column)
 								&& iterator.getIteratorSchema().containsKey(
 										utils.getColumnName((Column) equalsToExpression.getRightExpression())))) {
 					expressions.remove(e);
