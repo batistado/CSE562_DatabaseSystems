@@ -68,12 +68,7 @@ public class Sort {
 						c = -1;
 					}
 				} else if (pa instanceof DoubleValue && pb instanceof DoubleValue) {
-					if (pa.toDouble() > pb.toDouble()) {
-						c = 1;
-					}
-					if (pa.toDouble() < pa.toDouble()) {
-						c = -1;
-					}
+					c = Double.compare(pa.toDouble(), pb.toDouble());
 				} else if (pa instanceof DateValue && pb instanceof DateValue) {
 					DateValue dpa = (DateValue) pa;
 					DateValue dpb = (DateValue) pb;
@@ -86,6 +81,8 @@ public class Sort {
 							+ dpb.getMonth() * 100 + dpb.getDate())) {
 						c = -1;
 					}
+				} else if (pa instanceof StringValue && pb instanceof StringValue) {
+					c = pa.toString().compareTo(pb.toString());
 				} else {
 					c = pa.toString().compareTo(pb.toString());
 				}
@@ -96,6 +93,8 @@ public class Sort {
 				}
 			} catch (InvalidPrimitive i) {
 				i.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
 			}
 		}
 		return c;
@@ -150,12 +149,16 @@ public class Sort {
 	}
 
 	public void sort() {
+		try {
 		Collections.sort(rows, new Comparator<ArrayList<PrimitiveValue>>() {
 			@Override
 			public int compare(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b) {
 				return sortComparator(a, b);
 			}
 		});
+		}  catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public File writeBuffer() {
@@ -286,12 +289,12 @@ class BrIterator implements Iterator<String> {
 				return true;
 			} else {
 				br.close();
+				return false;
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return false;
 		}
-		return false;
 	}
 }

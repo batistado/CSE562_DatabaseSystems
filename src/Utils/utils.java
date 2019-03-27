@@ -12,9 +12,13 @@ import Models.TupleSchema;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.PrimitiveValue.InvalidPrimitive;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.PrimitiveType;
@@ -22,6 +26,40 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 public class utils {
+	public static boolean areEqual(PrimitiveValue pa, PrimitiveValue pb) {
+		try {
+			if (pa instanceof LongValue && pb instanceof LongValue) {
+				if (pa.toLong() == pb.toLong()) {
+					return true;
+				}
+			} else if (pa instanceof DoubleValue && pb instanceof DoubleValue) {
+				if (Double.compare(pa.toDouble(), pb.toDouble()) == 0) {
+					return true;
+				}
+			} else if (pa instanceof DateValue && pb instanceof DateValue) {
+				DateValue dpa = (DateValue) pa;
+				DateValue dpb = (DateValue) pb;
+
+				if ((dpa.getYear() * 10000 + dpa.getMonth() * 100 + dpa.getDate()) == (dpb.getYear() * 10000
+						+ dpb.getMonth() * 100 + dpb.getDate())) {
+					return true;
+				}
+			} else {
+				return pa.toString().equals(pb.toString());
+			}
+			
+			return false;
+		} catch (InvalidPrimitive i) {
+			i.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		}
+		
+		return false;
+	}
+	
+	
+	
 	public static String getOutputString(List<PrimitiveValue> resultList) {
 	    StringBuffer sb = new StringBuffer();
 	    for (PrimitiveValue value : resultList){

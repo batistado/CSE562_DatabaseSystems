@@ -41,7 +41,6 @@ public class GroupByIterator implements RAIterator{
 		
 		this.orderByElements = new ArrayList<OrderByElement>();
 		this.initializeIterator();
-		System.gc();
 	}
 	
 	private void initializeIterator() {
@@ -54,7 +53,6 @@ public class GroupByIterator implements RAIterator{
 		
 		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		fileName = s.sortData();
-		this.rightIterator = null;
 		
 		initializeReader();
 	}

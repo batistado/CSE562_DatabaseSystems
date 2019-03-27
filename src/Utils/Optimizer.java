@@ -117,10 +117,13 @@ public class Optimizer {
 
 				if (equalsToExpression.getLeftExpression() instanceof Column
 						&& equalsToExpression.getRightExpression() instanceof Column
-						&& leftIterator.getIteratorSchema()
+						&& ((leftIterator.getIteratorSchema()
 								.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression()))
 						&& rightIterator.getIteratorSchema()
-								.containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))) {
+								.containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))) || (leftIterator.getIteratorSchema()
+										.containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))
+										&& rightIterator.getIteratorSchema()
+												.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression()))))) {
 					expressions.remove(e);
 					return e;
 				}
@@ -135,14 +138,14 @@ public class Optimizer {
 			SelectIterator selectIterator) {
 		List<Expression> expressionList = splitAndClauses(selectIterator.getExpression());
 
-		RAIterator iterator = optimizeSelectionOverCrossHelper(crossProductIterator, expressionList);
+		RAIterator iterator = optimizeSelectionOverCrossHelper(crossProductIterator, expressionList, 0);
 		Expression expression = mergeAndClauses(expressionList);
 		
 		return expression == null ? iterator : new SelectIterator(iterator, expression);
 	}
 
 	public static RAIterator optimizeSelectionOverCrossHelper(CrossProductIterator crossProductIterator,
-			List<Expression> expressionList) {
+			List<Expression> expressionList, Integer level) {
 		if (expressionList.isEmpty()) {
 			return crossProductIterator;
 		}
@@ -156,13 +159,18 @@ public class Optimizer {
 
 		if (crossProductIterator.getRightIterator() instanceof CrossProductIterator) {
 			RAIterator rightIterator = optimizeSelectionOverCrossHelper(
-					(CrossProductIterator) crossProductIterator.getRightIterator(), expressionList);
+					(CrossProductIterator) crossProductIterator.getRightIterator(), expressionList, level + 1);
 
 //			if (Main.isInMemory) {
 				Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
 	
 				if (equiJoinCondition != null) {
-					return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+					
+					if (level == 0) {
+						return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+					} else {
+						return new SortMergeJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+					}
 				}
 //			}
 
@@ -180,7 +188,11 @@ public class Optimizer {
 			Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
 	
 			if (equiJoinCondition != null) {
-				return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+				if (level == 0) {
+					return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+				} else {
+					return new SortMergeJoinIterator(leftIterator, rightIterator, equiJoinCondition);
+				}
 			}
 //		}
 

@@ -62,7 +62,7 @@ public class AggregationIterator implements RAIterator{
 				}
 			} else {
 				for (int i=0; i < groupByColumns.size(); i++) {
-					if (!utils.projectColumnValue(rightRow, groupByColumns.get(i), fromSchema).equals(groupByValue.get(i))) {
+					if (!utils.areEqual(utils.projectColumnValue(rightRow, groupByColumns.get(i), fromSchema), groupByValue.get(i))) {
 						isSameGroup = false;
 						break;
 					}
