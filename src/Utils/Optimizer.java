@@ -158,13 +158,13 @@ public class Optimizer {
 			RAIterator rightIterator = optimizeSelectionOverCrossHelper(
 					(CrossProductIterator) crossProductIterator.getRightIterator(), expressionList);
 
-			if (Main.isInMemory) {
+//			if (Main.isInMemory) {
 				Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
 	
 				if (equiJoinCondition != null) {
 					return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
 				}
-			}
+//			}
 
 			return new CrossProductIterator(leftIterator, rightIterator);
 		}
@@ -176,13 +176,13 @@ public class Optimizer {
 			rightIterator = new SelectIterator(rightIterator, selectExpression);
 		}
 		
-		if (Main.isInMemory) {
+//		if (Main.isInMemory) {
 			Expression equiJoinCondition = getEquiJoinCondition(expressionList, leftIterator, rightIterator);
 	
 			if (equiJoinCondition != null) {
 				return new OnePassHashJoinIterator(leftIterator, rightIterator, equiJoinCondition);
 			}
-		}
+//		}
 
 		return new CrossProductIterator(leftIterator, rightIterator);
 

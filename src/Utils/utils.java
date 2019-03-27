@@ -100,6 +100,10 @@ public class utils {
 		}
 	}
 	
+	public static String getDate(Function f) {
+		return f.getParameters().getExpressions().get(0).toString();
+	}
+	
 	public static String getFunctionName(Function f) {
 		if (f.getParameters() == null) {
 			return "*";
@@ -169,7 +173,7 @@ public class utils {
 			@Override
 			public PrimitiveValue eval(Function function) throws SQLException {
 				if (function.getName().equals("DATE")) {
-					String dateString = getFunctionName(function);
+					String dateString = getDate(function);
 					return new DateValue(dateString.substring(1, dateString.length() - 1));
 				}
 				
