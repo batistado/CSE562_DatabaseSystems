@@ -38,6 +38,7 @@ public class SortIterator implements RAIterator{
 		fileName = s.sortData();
 		this.rightIterator = null;
 		initializeReader();
+		System.gc();
 	}
 	
 	private void initializeReader() {

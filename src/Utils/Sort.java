@@ -217,6 +217,18 @@ public class Sort {
 			}
 		}
 		
+		if (queue.size() == 0) {
+			try {
+				File temp = File.createTempFile("Temp", ".csv", new File(directory));
+				outputFile = temp.getAbsolutePath();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return;
+			
+		}
+		
 		outputFile = queue.get(0);
 	}
 

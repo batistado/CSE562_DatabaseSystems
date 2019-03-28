@@ -124,7 +124,18 @@ public class Optimizer {
 										.containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))
 										&& rightIterator.getIteratorSchema()
 												.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression()))))) {
+					
+					
 					expressions.remove(e);
+					
+					if ((leftIterator.getIteratorSchema()
+										.containsKey(utils.getColumnName((Column) equalsToExpression.getRightExpression()))
+										&& rightIterator.getIteratorSchema()
+												.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression())))) {
+						return new EqualsTo(equalsToExpression.getRightExpression(), equalsToExpression.getLeftExpression());
+					}
+					
+					
 					return e;
 				}
 			}
@@ -204,26 +215,33 @@ public class Optimizer {
 		if (expressions.isEmpty()) {
 			return null;
 		}
+		
+		
+		List<Expression> tmp = new ArrayList<Expression>();
+		List<Expression> expressionsCopy = new ArrayList<Expression>();
+		
+		for(Expression e: expressions) {
+			expressionsCopy.add(e);
+		}
 
-		for (Expression e : expressions) {
+		for (Expression e : expressionsCopy) {
 			if (e instanceof BinaryExpression) {
-				BinaryExpression equalsToExpression = (BinaryExpression) e;
+				BinaryExpression binaryExpression = (BinaryExpression) e;
 
-				if ((equalsToExpression.getLeftExpression() instanceof Column
-						&& ! (equalsToExpression.getRightExpression() instanceof Column)
+				if ((binaryExpression.getLeftExpression() instanceof Column
+						&& ! (binaryExpression.getRightExpression() instanceof Column)
 						&& iterator.getIteratorSchema()
-								.containsKey(utils.getColumnName((Column) equalsToExpression.getLeftExpression())))
-						|| (equalsToExpression.getRightExpression() instanceof Column
-								&& ! (equalsToExpression.getLeftExpression() instanceof Column)
+								.containsKey(utils.getColumnName((Column) binaryExpression.getLeftExpression())))
+						|| (binaryExpression.getRightExpression() instanceof Column
+								&& ! (binaryExpression.getLeftExpression() instanceof Column)
 								&& iterator.getIteratorSchema().containsKey(
-										utils.getColumnName((Column) equalsToExpression.getRightExpression())))) {
+										utils.getColumnName((Column) binaryExpression.getRightExpression())))) {
 					expressions.remove(e);
-					return e;
+					tmp.add(binaryExpression);
 				}
 			}
 		}
-
-		return null;
-
+		
+		return mergeAndClauses(tmp);
 	}
 }

@@ -29,6 +29,7 @@ public class FromIterator implements RAIterator{
 		this.table = table;
 		initializeReader();
 		this.setIteratorSchema();
+		System.gc();
 	}
 	
 	@Override
@@ -46,7 +47,7 @@ public class FromIterator implements RAIterator{
 	
 	public void initializeReader() {
 		try {
-			reader = new BufferedReader(new FileReader(DIR + table.getName() + ".csv"));
+			reader = new BufferedReader(new FileReader(DIR + table.getName().toLowerCase() + ".csv"));
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
