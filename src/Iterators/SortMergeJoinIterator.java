@@ -44,6 +44,7 @@ public class SortMergeJoinIterator implements RAIterator {
 
 	public SortMergeJoinIterator(RAIterator leftIterator, RAIterator rightIterator, Expression joinCondition) {
 		this.leftBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
+		this.rightBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
 		this.joinCondition = joinCondition;
 		this.leftIterator = leftIterator;
 		this.rightIterator = rightIterator;
@@ -83,6 +84,10 @@ public class SortMergeJoinIterator implements RAIterator {
 		orderByElements.add(order);
 		leftFileName = new Sort(leftIterator, orderByElements, leftIterator.getIteratorSchema(), DIR, leftBuffer)
 				.sortData();
+		
+		if (!Main.isInMemory) {
+			leftBuffer.clear();
+		}
 
 		order.setExpression((Column) equalsToExpression.getRightExpression());
 		order.setAsc(true);
@@ -90,6 +95,10 @@ public class SortMergeJoinIterator implements RAIterator {
 		orderByElements.add(order);
 		rightFileName = new Sort(rightIterator, orderByElements, rightIterator.getIteratorSchema(), DIR, rightBuffer)
 				.sortData();
+		
+		if (!Main.isInMemory) {
+			rightBuffer.clear();
+		}
 	}
 
 	@Override

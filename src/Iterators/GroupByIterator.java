@@ -64,6 +64,7 @@ public class GroupByIterator implements RAIterator{
 			if (Main.isInMemory) {
 				bufferIndex = -1;
 			} else {
+				buffer.clear();
 				reader = new BufferedReader(new FileReader(fileName));
 			}
 		} catch (FileNotFoundException e) {

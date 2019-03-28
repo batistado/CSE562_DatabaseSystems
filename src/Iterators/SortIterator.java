@@ -36,7 +36,6 @@ public class SortIterator implements RAIterator{
 		
 		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		fileName = s.sortData();
-		this.rightIterator = null;
 		initializeReader();
 		System.gc();
 	}
@@ -47,6 +46,7 @@ public class SortIterator implements RAIterator{
 			if (Main.isInMemory) {
 				bufferIndex = -1;
 			} else {
+				buffer.clear();
 				reader = new BufferedReader(new FileReader(fileName));
 			}
 		} catch (FileNotFoundException e) {

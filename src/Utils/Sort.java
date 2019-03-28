@@ -45,7 +45,6 @@ public class Sort {
 
 		if (!Main.isInMemory) {
 			this.rows = new ArrayList<ArrayList<PrimitiveValue>>();
-			buffer = null;
 		} else {
 			this.rows = buffer;
 		}
@@ -133,7 +132,7 @@ public class Sort {
 				if (tempFile != null)
 					tempFiles.add(tempFile);
 
-				rows = new ArrayList<ArrayList<PrimitiveValue>>();
+				rows.clear();
 			}
 		}
 
@@ -144,7 +143,7 @@ public class Sort {
 
 			if (tempFile != null)
 				tempFiles.add(tempFile);
-			rows = new ArrayList<ArrayList<PrimitiveValue>>();
+			rows.clear();
 		}
 	}
 
