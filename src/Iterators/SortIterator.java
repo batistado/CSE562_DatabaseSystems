@@ -34,8 +34,7 @@ public class SortIterator implements RAIterator{
 		this.setIteratorSchema();
 		this.buffer = new ArrayList<ArrayList<PrimitiveValue>>();
 		
-		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
-		fileName = s.sortData();
+		fileName = Sort.sortData(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		initializeReader();
 		System.gc();
 	}

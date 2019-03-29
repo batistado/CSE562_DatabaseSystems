@@ -27,146 +27,120 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 
 public class Sort {
-	private ArrayList<String> tempFiles = new ArrayList<String>();
-	private List<OrderByElement> orderByElements;
-	private String outputFile;
-	private RAIterator rightIterator = null;
-	private ArrayList<ArrayList<PrimitiveValue>> rows;
-	private Comparator<BrIterator> customComparator = null;
-	private TupleSchema fromSchema;
-	private String directory;
-
-	public Sort(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema,
-			String directory, ArrayList<ArrayList<PrimitiveValue>> buffer) {
-		this.rightIterator = rightIterator;
-		this.orderByElements = orderByElements;
-		this.fromSchema = fromSchema;
-		this.directory = directory;
-
-		if (!Main.isInMemory) {
-			this.rows = new ArrayList<ArrayList<PrimitiveValue>>();
-		} else {
-			this.rows = buffer;
-		}
-	}
-
-	public int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b) {
+	public static int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		// TODO Auto-generated method stub
-		int c = 0;
-		for (OrderByElement o : orderByElements) {
-			boolean isAscending = o.isAsc();
+			int c = 0;
+			for (OrderByElement o : orderByElements) {
+				boolean isAscending = o.isAsc();
 
-			PrimitiveValue pa = utils.projectColumnValue(a, o.getExpression(), fromSchema);
-			PrimitiveValue pb = utils.projectColumnValue(b, o.getExpression(), fromSchema);
-			try {
-				if (pa instanceof LongValue && pb instanceof LongValue) {
-					if (pa.toLong() > pb.toLong()) {
-						c = 1;
-					}
-					if (pa.toLong() < pb.toLong()) {
-						c = -1;
-					}
-				} else if (pa instanceof DoubleValue && pb instanceof DoubleValue) {
-					c = Double.compare(pa.toDouble(), pb.toDouble());
-				} else if (pa instanceof DateValue && pb instanceof DateValue) {
-					DateValue dpa = (DateValue) pa;
-					DateValue dpb = (DateValue) pb;
+				PrimitiveValue pa = utils.projectColumnValue(a, o.getExpression(), fromSchema);
+				PrimitiveValue pb = utils.projectColumnValue(b, o.getExpression(), fromSchema);
+				try {
+					if (pa instanceof LongValue && pb instanceof LongValue) {
+						if (pa.toLong() > pb.toLong()) {
+							c = 1;
+						}
+						if (pa.toLong() < pb.toLong()) {
+							c = -1;
+						}
+					} else if (pa instanceof DoubleValue && pb instanceof DoubleValue) {
+						c = Double.compare(pa.toDouble(), pb.toDouble());
+					} else if (pa instanceof DateValue && pb instanceof DateValue) {
+						DateValue dpa = (DateValue) pa;
+						DateValue dpb = (DateValue) pb;
 
-					if ((dpa.getYear() * 10000 + dpa.getMonth() * 100 + dpa.getDate()) > (dpb.getYear() * 10000
-							+ dpb.getMonth() * 100 + dpb.getDate())) {
-						c = 1;
+						if ((dpa.getYear() * 10000 + dpa.getMonth() * 100
+								+ dpa.getDate()) > (dpb.getYear() * 10000 + dpb.getMonth() * 100
+										+ dpb.getDate())) {
+							c = 1;
+						}
+						if ((dpa.getYear() * 10000 + dpa.getMonth() * 100
+								+ dpa.getDate()) < (dpb.getYear() * 10000 + dpb.getMonth() * 100
+										+ dpb.getDate())) {
+							c = -1;
+						}
+					} else if (pa instanceof StringValue && pb instanceof StringValue) {
+						c = pa.toString().compareTo(pb.toString());
+					} else {
+						c = pa.toString().compareTo(pb.toString());
 					}
-					if ((dpa.getYear() * 10000 + dpa.getMonth() * 100 + dpa.getDate()) < (dpb.getYear() * 10000
-							+ dpb.getMonth() * 100 + dpb.getDate())) {
-						c = -1;
+
+					if (c != 0) {
+						c = isAscending ? c : -1 * c;
+						break;
 					}
-				} else if (pa instanceof StringValue && pb instanceof StringValue) {
-					c = pa.toString().compareTo(pb.toString());
-				} else {
-					c = pa.toString().compareTo(pb.toString());
+				} catch (InvalidPrimitive i) {
+					i.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
 				}
-
-				if (c != 0) {
-					c = isAscending ? c : -1 * c;
-					break;
-				}
-			} catch (InvalidPrimitive i) {
-				i.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
 			}
+			return c;
+	}
+
+	public static String sortData(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema,
+			String directory, ArrayList<ArrayList<PrimitiveValue>> buffer) {
+		if (Main.isInMemory) {
+			while (rightIterator.hasNext()) {
+				buffer.add(rightIterator.next());
+			}
+			sort(buffer, orderByElements, fromSchema);
+			
+			return null;
 		}
-		return c;
-	}
-
-	public String sortData() {
-		if (Main.isInMemory)
-			return sortInMemory();
-
-		readData();
-		this.customComparator = createComparator();
-		mergeFiles();
-		return outputFile;
-	}
-
-	public String sortInMemory() {
-		while (rightIterator.hasNext()) {
-			rows.add(rightIterator.next());
-		}
-
-		sort();
-		return null;
-	}
-
-	public void readData() {
-		System.gc();
+		
+		ArrayList<String> tempFiles = new ArrayList<String>();
+		ArrayList<ArrayList<PrimitiveValue>> sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
 		int count = 0;
 		while (rightIterator.hasNext()) {
 			count++;
-			rows.add(rightIterator.next());
-			if (count == 50000) {
+			sortedRows.add(rightIterator.next());
+			if (count == Main.sortBufferSize) {
 				count = 0;
-				sort();
+				sort(sortedRows, orderByElements, fromSchema);
 
-				String tempFile = writeBuffer();
+				String tempFile = writeBuffer(sortedRows);
 
 				if (tempFile != null)
 					tempFiles.add(tempFile);
 
-				rows.clear();
+				sortedRows.clear();
 			}
 		}
 
-		if (!rows.isEmpty()) {
-			sort();
+		if (!sortedRows.isEmpty()) {
+			sort(sortedRows, orderByElements, fromSchema);
 
-			String tempFile = writeBuffer();
+			String tempFile = writeBuffer(sortedRows);
 
 			if (tempFile != null)
 				tempFiles.add(tempFile);
-			rows.clear();
+			sortedRows.clear();
 		}
+		
+		return mergeFiles(tempFiles, orderByElements, fromSchema);
+
 	}
 
-	public void sort() {
-		System.gc();
+	public static void sort(ArrayList<ArrayList<PrimitiveValue>> buffer, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		try {
-		Collections.sort(rows, new Comparator<ArrayList<PrimitiveValue>>() {
-			@Override
-			public int compare(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b) {
-				return sortComparator(a, b);
-			}
-		});
-		}  catch (IllegalArgumentException e) {
+			Collections.sort(buffer, new Comparator<ArrayList<PrimitiveValue>>() {
+				@Override
+				public int compare(ArrayList<PrimitiveValue> o1, ArrayList<PrimitiveValue> o2) {
+					// TODO Auto-generated method stub
+					return sortComparator(o1, o2, orderByElements, fromSchema);
+				}
+			});
+		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public String writeBuffer() {
+	public static String writeBuffer(ArrayList<ArrayList<PrimitiveValue>> sortedRows) {
 		try {
-			File temp = File.createTempFile("Temp", ".csv", new File(directory));
+			File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
 			BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
-			for (ArrayList<PrimitiveValue> i : rows) {
+			for (ArrayList<PrimitiveValue> i : sortedRows) {
 				bw.write(utils.getOutputString(i));
 				bw.write("\n");
 			}
@@ -179,15 +153,14 @@ public class Sort {
 		}
 	}
 
-	public void mergeFiles() {
-		System.gc();
-		PriorityQueue<BrIterator> pq = new PriorityQueue<BrIterator>(customComparator);
+	public static String mergeFiles(ArrayList<String> tempFiles, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
+		PriorityQueue<BrIterator> pq = new PriorityQueue<BrIterator>(createComparator(orderByElements, fromSchema));
 		LinkedList<String> queue = new LinkedList<String>();
 
 		for (String tempFileI : tempFiles) {
 			queue.add(tempFileI);
 		}
-		
+
 		tempFiles.clear();
 		tempFiles = null;
 
@@ -204,7 +177,7 @@ public class Sort {
 			}
 
 			try {
-				File temp = File.createTempFile("Temp", ".csv", new File(directory));
+				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
 				while (!pq.isEmpty()) {
 					BrIterator it = pq.poll();
@@ -221,23 +194,23 @@ public class Sort {
 				e.printStackTrace();
 			}
 		}
-		
+
 		if (queue.size() == 0) {
 			try {
-				File temp = File.createTempFile("Temp", ".csv", new File(directory));
-				outputFile = temp.getAbsolutePath();
+				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
+				return temp.getAbsolutePath();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			return;
-			
+			return null;
+
 		}
-		
-		outputFile = queue.get(0);
+
+		return queue.get(0);
 	}
 
-	public Comparator<BrIterator> createComparator() {
+	public static Comparator<BrIterator> createComparator(List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		return new Comparator<BrIterator>() {
 
 			@Override
@@ -249,7 +222,7 @@ public class Sort {
 				ArrayList<PrimitiveValue> tmp1 = getRow(line1);
 				ArrayList<PrimitiveValue> tmp2 = getRow(line2);
 
-				return sortComparator(tmp1, tmp2);
+				return sortComparator(tmp1, tmp2, orderByElements, fromSchema);
 			}
 
 			public ArrayList<PrimitiveValue> getRow(String[] line) {

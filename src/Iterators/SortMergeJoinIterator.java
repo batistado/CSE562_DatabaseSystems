@@ -85,8 +85,7 @@ public class SortMergeJoinIterator implements RAIterator {
 		order.setAsc(true);
 		List<OrderByElement> orderByElements = new ArrayList<OrderByElement>();
 		orderByElements.add(order);
-		leftFileName = new Sort(leftIterator, orderByElements, leftIterator.getIteratorSchema(), DIR, leftBuffer)
-				.sortData();
+		leftFileName = Sort.sortData(leftIterator, orderByElements, leftIterator.getIteratorSchema(), DIR, leftBuffer);
 		
 		if (!Main.isInMemory) {
 			leftBuffer.clear();
@@ -96,8 +95,7 @@ public class SortMergeJoinIterator implements RAIterator {
 		order.setAsc(true);
 		orderByElements.clear();
 		orderByElements.add(order);
-		rightFileName = new Sort(rightIterator, orderByElements, rightIterator.getIteratorSchema(), DIR, rightBuffer)
-				.sortData();
+		rightFileName = Sort.sortData(rightIterator, orderByElements, rightIterator.getIteratorSchema(), DIR, rightBuffer);
 		
 		if (!Main.isInMemory) {
 			rightBuffer.clear();

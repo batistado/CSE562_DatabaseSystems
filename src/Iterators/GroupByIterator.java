@@ -52,8 +52,7 @@ public class GroupByIterator implements RAIterator{
 			orderByElements.add(o);
 		}
 		
-		Sort s = new Sort(rightIterator, orderByElements, fromSchema, DIR, buffer);
-		fileName = s.sortData();
+		fileName = Sort.sortData(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		
 		initializeReader();
 	}
