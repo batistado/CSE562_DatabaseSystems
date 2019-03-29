@@ -161,7 +161,7 @@ public class SortMergeJoinIterator implements RAIterator {
 				}
 				
 				
-				while(true) {
+				while(leftBufferIndex < leftBuffer.size() && rightBufferIndex < rightBuffer.size()) {
 					row.clear();
 
 					row.addAll(leftBuffer.get(leftBufferIndex));
@@ -187,6 +187,8 @@ public class SortMergeJoinIterator implements RAIterator {
 						}
 					}
 				}
+				
+				return false;
 			}
 			
 			if (leftReader == null || rightReader == null || (leftLine = leftReader.readLine()) == null
@@ -206,7 +208,7 @@ public class SortMergeJoinIterator implements RAIterator {
 			}
 
 			row = new ArrayList<PrimitiveValue>();
-			while (true) {
+			while (leftReader != null && rightReader != null) {
 				row.clear();
 				ArrayList<PrimitiveValue> leftRow = getRow(true);
 				ArrayList<PrimitiveValue> rightRow = getRow(false);
@@ -225,11 +227,17 @@ public class SortMergeJoinIterator implements RAIterator {
 				if (utils.filterRow(row, e, fromSchema)) {
 					if ((rightLine = rightReader.readLine()) == null) {
 						rightReader.close();
+						leftReader.close();
+						leftReader = null;
+						rightReader = null;
 						return false;
 					}
 				} else {
 					if ((leftLine = leftReader.readLine()) == null) {
+						rightReader.close();
 						leftReader.close();
+						leftReader = null;
+						rightReader = null;
 						return false;
 					}
 				}

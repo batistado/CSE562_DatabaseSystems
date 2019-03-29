@@ -27,7 +27,7 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 
 public class Sort {
-	private ArrayList<File> tempFiles = new ArrayList<File>();
+	private ArrayList<String> tempFiles = new ArrayList<String>();
 	private List<OrderByElement> orderByElements;
 	private String outputFile;
 	private RAIterator rightIterator = null;
@@ -119,6 +119,7 @@ public class Sort {
 	}
 
 	public void readData() {
+		System.gc();
 		int count = 0;
 		while (rightIterator.hasNext()) {
 			count++;
@@ -127,7 +128,7 @@ public class Sort {
 				count = 0;
 				sort();
 
-				File tempFile = writeBuffer();
+				String tempFile = writeBuffer();
 
 				if (tempFile != null)
 					tempFiles.add(tempFile);
@@ -139,7 +140,7 @@ public class Sort {
 		if (!rows.isEmpty()) {
 			sort();
 
-			File tempFile = writeBuffer();
+			String tempFile = writeBuffer();
 
 			if (tempFile != null)
 				tempFiles.add(tempFile);
@@ -148,6 +149,7 @@ public class Sort {
 	}
 
 	public void sort() {
+		System.gc();
 		try {
 		Collections.sort(rows, new Comparator<ArrayList<PrimitiveValue>>() {
 			@Override
@@ -160,7 +162,7 @@ public class Sort {
 		}
 	}
 
-	public File writeBuffer() {
+	public String writeBuffer() {
 		try {
 			File temp = File.createTempFile("Temp", ".csv", new File(directory));
 			BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
@@ -169,7 +171,7 @@ public class Sort {
 				bw.write("\n");
 			}
 			bw.close();
-			return temp;
+			return temp.getAbsolutePath();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -178,12 +180,16 @@ public class Sort {
 	}
 
 	public void mergeFiles() {
+		System.gc();
 		PriorityQueue<BrIterator> pq = new PriorityQueue<BrIterator>(customComparator);
 		LinkedList<String> queue = new LinkedList<String>();
 
-		for (File tempFileI : tempFiles) {
-			queue.add(tempFileI.getAbsolutePath());
+		for (String tempFileI : tempFiles) {
+			queue.add(tempFileI);
 		}
+		
+		tempFiles.clear();
+		tempFiles = null;
 
 		while (queue.size() > 1) {
 			int count = 0;
