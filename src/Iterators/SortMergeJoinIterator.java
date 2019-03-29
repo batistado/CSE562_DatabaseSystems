@@ -3,7 +3,7 @@ package Iterators;
 import java.io.BufferedReader;
 import java.io.*;
 import java.io.FileReader;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +35,7 @@ public class SortMergeJoinIterator implements RAIterator {
 	private String rightFileName;
 	private ArrayList<ArrayList<PrimitiveValue>> leftBuffer;
 	private ArrayList<ArrayList<PrimitiveValue>> rightBuffer;
+	private LinkedList<ArrayList<PrimitiveValue>> buffer;
 	private BufferedReader leftReader;
 	private BufferedReader rightReader;
 	private String leftLine;
@@ -45,6 +46,7 @@ public class SortMergeJoinIterator implements RAIterator {
 	public SortMergeJoinIterator(RAIterator leftIterator, RAIterator rightIterator, Expression joinCondition) {
 		this.leftBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
 		this.rightBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
+		this.buffer = new LinkedList<ArrayList<PrimitiveValue>>();
 		this.joinCondition = joinCondition;
 		this.leftIterator = leftIterator;
 		this.rightIterator = rightIterator;
@@ -150,12 +152,44 @@ public class SortMergeJoinIterator implements RAIterator {
 
 		return tmp;
 	}
+	
+	public void fillBuffer() {
+		if (Main.isInMemory) {
+			ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
+			
+			PrimitiveValue joinValue = utils.projectColumnValue(leftBuffer.get(leftBufferIndex), ((EqualsTo) joinCondition).getLeftExpression(), fromSchema);
+			
+			while (leftBufferIndex < leftBuffer.size() && utils.areEqual(joinValue, utils.projectColumnValue(leftBuffer.get(leftBufferIndex), ((EqualsTo) joinCondition).getLeftExpression(), fromSchema))) {
+				while (rightBufferIndex < rightBuffer.size()) {
+					tmp.clear();
+					tmp.addAll(leftBuffer.get(leftBufferIndex));
+					tmp.addAll(rightBuffer.get(rightBufferIndex));
+					if (utils.filterRow(tmp, joinCondition, fromSchema)) {
+						buffer.add(tmp);
+					} else {
+						break;
+					}
+					rightBufferIndex++;
+				}
+				leftBufferIndex++;
+			}
+			
+			leftBufferIndex--;
+			rightBufferIndex--;
+		}
+	}
 
 	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
 			if (Main.isInMemory) {
+				if (!buffer.isEmpty()) {
+					row = buffer.pollFirst();
+					return true;
+				}
+				
+				
 				if (++leftBufferIndex >= leftBuffer.size() || ++rightBufferIndex >= rightBuffer.size()) {
 					row = null;
 					return false;
@@ -169,6 +203,9 @@ public class SortMergeJoinIterator implements RAIterator {
 					row.addAll(rightBuffer.get(rightBufferIndex));
 					
 					if (utils.filterRow(row, joinCondition, fromSchema)) {
+						fillBuffer();
+						row.clear();
+						row = buffer.pollFirst();
 						return true;
 					}
 					
