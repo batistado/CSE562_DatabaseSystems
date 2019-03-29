@@ -159,9 +159,12 @@ public class SortMergeJoinIterator implements RAIterator {
 			
 			PrimitiveValue joinValue = utils.projectColumnValue(leftBuffer.get(leftBufferIndex), ((EqualsTo) joinCondition).getLeftExpression(), fromSchema);
 			
+			int rightIndex = rightBufferIndex, maxRight = rightBufferIndex;
 			while (leftBufferIndex < leftBuffer.size() && utils.areEqual(joinValue, utils.projectColumnValue(leftBuffer.get(leftBufferIndex), ((EqualsTo) joinCondition).getLeftExpression(), fromSchema))) {
+				rightBufferIndex = rightIndex;
 				while (rightBufferIndex < rightBuffer.size()) {
-					tmp.clear();
+					
+					tmp = new ArrayList<PrimitiveValue>();
 					tmp.addAll(leftBuffer.get(leftBufferIndex));
 					tmp.addAll(rightBuffer.get(rightBufferIndex));
 					if (utils.filterRow(tmp, joinCondition, fromSchema)) {
@@ -169,13 +172,18 @@ public class SortMergeJoinIterator implements RAIterator {
 					} else {
 						break;
 					}
+					
+				
 					rightBufferIndex++;
+					if (maxRight < rightBufferIndex) {
+						maxRight = rightBufferIndex;
+					}
 				}
 				leftBufferIndex++;
 			}
 			
 			leftBufferIndex--;
-			rightBufferIndex--;
+			rightBufferIndex = maxRight-1;
 		}
 	}
 
