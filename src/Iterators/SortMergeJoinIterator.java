@@ -57,6 +57,7 @@ public class SortMergeJoinIterator implements RAIterator {
 	private void initializeReader() {
 		// TODO Auto-generated method stub
 		try {
+			row = new ArrayList<PrimitiveValue>();
 			if (Main.isInMemory) {
 				leftBufferIndex = -1;
 				rightBufferIndex = -1;
@@ -207,7 +208,6 @@ public class SortMergeJoinIterator implements RAIterator {
 				return false;
 			}
 
-			row = new ArrayList<PrimitiveValue>();
 			while (leftReader != null && rightReader != null) {
 				row.clear();
 				ArrayList<PrimitiveValue> leftRow = getRow(true);
