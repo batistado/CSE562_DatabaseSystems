@@ -44,7 +44,7 @@ public class Average implements Aggregate {
 			if (type == PrimitiveType.LONG) {
 				accumulator = new LongValue(accumulator.toLong() + newValue.toLong());
 			} else {
-				accumulator = new DoubleValue(accumulator.getType() == PrimitiveType.LONG ? accumulator.toLong() : accumulator.toDouble() + newValue.toDouble());
+				accumulator = new DoubleValue((accumulator.getType() == PrimitiveType.LONG ? accumulator.toLong() : accumulator.toDouble()) + newValue.toDouble());
 			}
 			count++;
 		} catch (InvalidPrimitive e) {
