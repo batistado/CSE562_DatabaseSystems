@@ -36,7 +36,7 @@ public class SortIterator implements RAIterator{
 		
 		fileName = Sort.sortData(rightIterator, orderByElements, fromSchema, DIR, buffer);
 		initializeReader();
-		System.gc();
+		//System.gc();
 	}
 	
 	private void initializeReader() {

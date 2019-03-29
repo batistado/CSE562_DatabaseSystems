@@ -28,7 +28,7 @@ public class ProjectIterator implements RAIterator{
 		this.rightIterator = rightIterator;
 		this.selectItems = selectItems;
 		setIteratorSchema();
-		System.gc();
+		//System.gc();
 	}
 	
 	public void resetIterator() {

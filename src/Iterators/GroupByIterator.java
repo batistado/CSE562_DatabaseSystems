@@ -41,7 +41,7 @@ public class GroupByIterator implements RAIterator{
 		
 		this.orderByElements = new ArrayList<OrderByElement>();
 		this.initializeIterator();
-		System.gc();
+		//System.gc();
 	}
 	
 	private void initializeIterator() {

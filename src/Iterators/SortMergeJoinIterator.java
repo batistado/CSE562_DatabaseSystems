@@ -53,7 +53,7 @@ public class SortMergeJoinIterator implements RAIterator {
 		this.setIteratorSchema();
 		this.initializeIterator();
 		this.initializeReader();
-		System.gc();
+		//System.gc();
 	}
 
 	private void initializeReader() {

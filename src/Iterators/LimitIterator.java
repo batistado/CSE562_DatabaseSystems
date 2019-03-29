@@ -21,7 +21,7 @@ public class LimitIterator implements RAIterator{
 		this.rightIterator = rightIterator;
 		this.limit = limit;
 		setIteratorSchema();
-		System.gc();
+		//System.gc();
 	}
 	
 	public Limit getLimit() {

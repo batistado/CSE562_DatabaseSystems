@@ -20,7 +20,7 @@ public class CrossProductIterator implements RAIterator{
 		this.leftIterator = leftIterator;
 		this.rightIterator = rightIterator;
 		setIteratorSchema();
-		System.gc();
+		//System.gc();
 	}
 	
 	@Override

@@ -29,7 +29,7 @@ public class FromIterator implements RAIterator{
 		this.table = table;
 		initializeReader();
 		this.setIteratorSchema();
-		System.gc();
+		//System.gc();
 	}
 	
 	@Override

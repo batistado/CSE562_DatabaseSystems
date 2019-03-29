@@ -11,7 +11,7 @@ import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
 
 public class Optimizer {
-	public static RAIterator optimizeRA(RAIterator root) {
+	public RAIterator optimizeRA(RAIterator root) {
 		if (root instanceof SelectIterator) {
 			SelectIterator selectIterator = (SelectIterator) root;
 
@@ -72,7 +72,7 @@ public class Optimizer {
 
 	}
 
-	public static List<Expression> splitAndClauses(Expression e) {
+	public List<Expression> splitAndClauses(Expression e) {
 		List<Expression> splitExpressions = new ArrayList<Expression>();
 
 		if (e instanceof AndExpression) {
@@ -86,7 +86,7 @@ public class Optimizer {
 		return splitExpressions;
 	}
 
-	public static Expression mergeAndClauses(List<Expression> expressionList) {
+	public Expression mergeAndClauses(List<Expression> expressionList) {
 		if (expressionList.isEmpty()) {
 			return null;
 		}
@@ -105,7 +105,7 @@ public class Optimizer {
 		return leftExpression;
 	}
 
-	public static Expression getEquiJoinCondition(List<Expression> expressions, RAIterator leftIterator,
+	public Expression getEquiJoinCondition(List<Expression> expressions, RAIterator leftIterator,
 			RAIterator rightIterator) {
 		if (expressions.isEmpty()) {
 			return null;
@@ -145,7 +145,7 @@ public class Optimizer {
 
 	}
 
-	public static RAIterator optimizeSelectionOverCross(CrossProductIterator crossProductIterator,
+	public RAIterator optimizeSelectionOverCross(CrossProductIterator crossProductIterator,
 			SelectIterator selectIterator) {
 		List<Expression> expressionList = splitAndClauses(selectIterator.getExpression());
 
@@ -155,7 +155,7 @@ public class Optimizer {
 		return expression == null ? iterator : new SelectIterator(iterator, expression);
 	}
 
-	public static RAIterator optimizeSelectionOverCrossHelper(CrossProductIterator crossProductIterator,
+	public RAIterator optimizeSelectionOverCrossHelper(CrossProductIterator crossProductIterator,
 			List<Expression> expressionList, Integer level) {
 		if (expressionList.isEmpty()) {
 			return crossProductIterator;
@@ -211,7 +211,7 @@ public class Optimizer {
 
 	}
 
-	public static Expression getIteratorSpecificCondition(List<Expression> expressions, RAIterator iterator) {
+	public Expression getIteratorSpecificCondition(List<Expression> expressions, RAIterator iterator) {
 		if (expressions.isEmpty()) {
 			return null;
 		}

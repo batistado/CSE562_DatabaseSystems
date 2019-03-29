@@ -68,14 +68,13 @@ public class Main {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
 					Select selectQuery = (Select) queryStatement;
-					RAIterator queryIterator = Optimizer.optimizeRA(evaluateQuery(selectQuery));
-					//RAIterator queryIterator = evaluateQuery(selectQuery);
+					RAIterator queryIterator = evaluateQuery(selectQuery);
 					printer(queryIterator);
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
 				}
-				System.gc();
+				//System.gc();
 				System.out.println("$> ");
 				parser = new CCJSqlParser(System.in);
 			}
@@ -95,146 +94,8 @@ public class Main {
 		tableSchemas.put(table.getTable().getName(), ts);
 	}
 	
-	public static RAIterator evaluatePlainSelect(PlainSelect plainSelectQuery) {
-		FromItem fromItem = plainSelectQuery.getFromItem();
-		
-		RAIterator innerIterator = null;
-		if (fromItem == null) {
-			// Implement expression evaluation
-			return null;
-		}
-		else if (fromItem instanceof SubSelect) {
-			innerIterator =  evaluateSubQuery(plainSelectQuery);
-		} 
-		else {
-			innerIterator = evaluateFromTables(plainSelectQuery);
-		}
-		
-		innerIterator = addProjection(innerIterator, plainSelectQuery);
-		innerIterator = addSort(innerIterator, plainSelectQuery.getOrderByElements());
-		innerIterator = addLimit(innerIterator, plainSelectQuery.getLimit());
-		
-		return innerIterator;
-	}
-	
-	public static RAIterator addProjection(RAIterator iterator, PlainSelect plainSelect) {
-		List<Column> groupByColumns = plainSelect.getGroupByColumnReferences();
-		
-		if (groupByColumns != null && !groupByColumns.isEmpty()) {
-			RAIterator aggIterator = new AggregationIterator(new GroupByIterator(Optimizer.optimizeRA(iterator), groupByColumns), plainSelect.getSelectItems());
-			//RAIterator aggIterator = new AggregationIterator(new GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
-			
-			return plainSelect.getHaving() == null ? aggIterator : new SelectIterator(aggIterator, plainSelect.getHaving());
-		}
-		
-		boolean hasAggregation = false;
-		for(SelectItem selectItem : plainSelect.getSelectItems()) {
-			if (selectItem instanceof SelectExpressionItem && ((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
-				hasAggregation = true;
-				break;
-			}
-		}
-		
-		return hasAggregation ? new AggregationIterator(iterator, plainSelect.getSelectItems()) : new ProjectIterator(iterator, plainSelect.getSelectItems());
-	}
-	
-	public static RAIterator addLimit(RAIterator iterator, Limit limit) {
-		if (limit == null)
-			return iterator;
-		
-		return new LimitIterator(iterator, limit);
-	}
-	
-	public static RAIterator addSort(RAIterator iterator, List<OrderByElement> orderByElements) {
-		if (orderByElements == null || orderByElements.isEmpty())
-			return iterator;
-		
-		
-		return new SortIterator(Optimizer.optimizeRA(iterator), orderByElements);
-		//return new SortIterator(iterator, orderByElements);
-	}
-	
-	public static RAIterator evaluateSubQuery(PlainSelect selectQuery) {
-		Expression where = selectQuery.getWhere();
-		SubSelect subQuery = (SubSelect) selectQuery.getFromItem();
-		
-		if (subQuery.getSelectBody() instanceof PlainSelect) {
-			PlainSelect subSelect = (PlainSelect)subQuery.getSelectBody();
-			return where == null ? new SubQueryIterator(evaluatePlainSelect(subSelect)) : new SelectIterator(new SubQueryIterator(evaluatePlainSelect(subSelect)), where);
-		} 
-		else {
-			// Write Union logic
-			return evaluateUnion((Union) subQuery.getSelectBody());
-		}
-		
-	}
-	
-	public static RAIterator evaluateUnion(Union union){
-		if (!union.isAll()) {
-			// TODO: Union with distinct
-			return null;
-		}
-		
-		List<RAIterator> iteratorsList = new ArrayList<>();
-		for (PlainSelect plainSelect : union.getPlainSelects()) {
-			iteratorsList.add(evaluatePlainSelect(plainSelect));
-		}
-		
-		return new UnionIterator(iteratorsList);
-	}
-	
-	public static RAIterator evaluateFromTables(PlainSelect plainSelect) {
-		Expression where = plainSelect.getWhere();
-		Table fromTable = (Table) plainSelect.getFromItem();
-		List<Join> joins = plainSelect.getJoins();
-		
-		if (joins == null || joins.isEmpty()) {
-			return evaluateFromTable(fromTable, where);
-		} else {
-			// joins implementation
-			return evaluateJoins(fromTable, joins, where);
-		}
-	}
-	
-	public static RAIterator evaluateFromTable(Table fromTable, Expression where) {
-		FromIterator fromIterator = new FromIterator(fromTable);
-		
-		return where == null ? fromIterator : new SelectIterator(fromIterator, where);
-	}
-	
-	public static RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter) {
-		RAIterator iterator = null;
-		
-		if (joins.size() == 1) {
-			Table rightTable = (Table) joins.get(0).getRightItem();
-			iterator = new CrossProductIterator(new FromIterator(fromTable), new FromIterator(rightTable));
-		} else {
-			Collections.reverse(joins);
-			
-			RAIterator rightIterator = null;
-			for (Join join: joins) {
-				Table rightTable = (Table) join.getRightItem();
-				
-				if (rightIterator == null) {
-					rightIterator = new FromIterator(rightTable);
-				} else {
-					rightIterator = new CrossProductIterator(new FromIterator(rightTable), rightIterator);
-				}
-			}
-			
-			iterator = new CrossProductIterator(new FromIterator(fromTable), rightIterator);
-		}
-		
-		return filter == null ? iterator : new SelectIterator(iterator, filter);
-	}
-	
 	public static RAIterator evaluateQuery(Select selectQuery) {
-		if (selectQuery.getSelectBody() instanceof PlainSelect) {
-			return evaluatePlainSelect((PlainSelect)selectQuery.getSelectBody());
-		}
-		else {
-			return evaluateUnion((Union) selectQuery.getSelectBody());
-		}
+		return new Optimizer().optimizeRA(new QueryEvaluator().evaluateQuery(selectQuery));
 	}
 	
 	public static void printer(RAIterator iterator) throws FileNotFoundException, UnsupportedEncodingException {

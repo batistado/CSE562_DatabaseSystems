@@ -36,7 +36,7 @@ public class AggregationIterator implements RAIterator{
 		this.groupByColumns = new ArrayList<Column>();
 		this.groupByValue = new ArrayList<PrimitiveValue>();
 		this.setIteratorSchema();
-		System.gc();
+		//System.gc();
 	}
 
 	public void resetIterator() {
