@@ -70,6 +70,7 @@ public class Main {
 					Select selectQuery = (Select) queryStatement;
 					RAIterator queryIterator = evaluateQuery(selectQuery);
 					printer(queryIterator);
+					queryIterator = null;
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);

@@ -85,7 +85,7 @@ public class SortMergeJoinIterator implements RAIterator {
 		order.setAsc(true);
 		List<OrderByElement> orderByElements = new ArrayList<OrderByElement>();
 		orderByElements.add(order);
-		leftFileName = Sort.sortData(leftIterator, orderByElements, leftIterator.getIteratorSchema(), DIR, leftBuffer);
+		leftFileName = sort(leftIterator, orderByElements, leftBuffer);
 		
 		if (!Main.isInMemory) {
 			leftBuffer.clear();
@@ -95,11 +95,15 @@ public class SortMergeJoinIterator implements RAIterator {
 		order.setAsc(true);
 		orderByElements.clear();
 		orderByElements.add(order);
-		rightFileName = Sort.sortData(rightIterator, orderByElements, rightIterator.getIteratorSchema(), DIR, rightBuffer);
+		rightFileName = sort(rightIterator, orderByElements, rightBuffer);
 		
 		if (!Main.isInMemory) {
 			rightBuffer.clear();
 		}
+	}
+	
+	public String sort(RAIterator iterator, List<OrderByElement> orderByElements, ArrayList<ArrayList<PrimitiveValue>> buffer) {
+		return new Sort().sortData(iterator, orderByElements, iterator.getIteratorSchema(), DIR, buffer);
 	}
 
 	@Override
@@ -203,14 +207,14 @@ public class SortMergeJoinIterator implements RAIterator {
 				
 				
 				while(leftBufferIndex < leftBuffer.size() && rightBufferIndex < rightBuffer.size()) {
-					row.clear();
+					row = new ArrayList<PrimitiveValue>();
 
 					row.addAll(leftBuffer.get(leftBufferIndex));
 					row.addAll(rightBuffer.get(rightBufferIndex));
 					
 					if (utils.filterRow(row, joinCondition, fromSchema)) {
 						fillBuffer();
-						row.clear();
+						//row.clear();
 						row = buffer.pollFirst();
 						return true;
 					}

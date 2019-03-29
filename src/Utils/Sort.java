@@ -27,7 +27,7 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 
 public class Sort {
-	public static int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
+	public int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		// TODO Auto-generated method stub
 			int c = 0;
 			for (OrderByElement o : orderByElements) {
@@ -78,7 +78,7 @@ public class Sort {
 			return c;
 	}
 
-	public static String sortData(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema,
+	public String sortData(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema,
 			String directory, ArrayList<ArrayList<PrimitiveValue>> buffer) {
 		if (Main.isInMemory) {
 			while (rightIterator.hasNext()) {
@@ -122,7 +122,7 @@ public class Sort {
 
 	}
 
-	public static void sort(ArrayList<ArrayList<PrimitiveValue>> buffer, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
+	public void sort(ArrayList<ArrayList<PrimitiveValue>> buffer, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		try {
 			Collections.sort(buffer, new Comparator<ArrayList<PrimitiveValue>>() {
 				@Override
@@ -136,7 +136,7 @@ public class Sort {
 		}
 	}
 
-	public static String writeBuffer(ArrayList<ArrayList<PrimitiveValue>> sortedRows) {
+	public String writeBuffer(ArrayList<ArrayList<PrimitiveValue>> sortedRows) {
 		try {
 			File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
 			BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
@@ -153,10 +153,11 @@ public class Sort {
 		}
 	}
 
-	public static String mergeFiles(ArrayList<String> tempFiles, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
+	public String mergeFiles(ArrayList<String> tempFiles, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		PriorityQueue<BrIterator> pq = new PriorityQueue<BrIterator>(createComparator(orderByElements, fromSchema));
 		LinkedList<String> queue = new LinkedList<String>();
 
+		System.out.println(tempFiles.size());
 		for (String tempFileI : tempFiles) {
 			queue.add(tempFileI);
 		}
@@ -210,7 +211,7 @@ public class Sort {
 		return queue.get(0);
 	}
 
-	public static Comparator<BrIterator> createComparator(List<OrderByElement> orderByElements, TupleSchema fromSchema) {
+	public Comparator<BrIterator> createComparator(List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		return new Comparator<BrIterator>() {
 
 			@Override
