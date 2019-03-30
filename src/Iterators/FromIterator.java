@@ -20,7 +20,6 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 public class FromIterator implements RAIterator{
 	private BufferedReader reader;
 	private ArrayList<PrimitiveValue> row;
-	private String line;
 	private Table table;
 	private TupleSchema fromSchema;
 	
@@ -46,7 +45,7 @@ public class FromIterator implements RAIterator{
 	
 	public void initializeReader() {
 		try {
-			reader = new BufferedReader(new FileReader(DIR + table.getName() + ".csv"));
+			reader = new BufferedReader(new FileReader(DIR + table.getName().toLowerCase() + ".csv"));
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}
@@ -56,10 +55,7 @@ public class FromIterator implements RAIterator{
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
-				line = null;
-				while (reader != null && (line = reader.readLine()) != null) {
-					row = null;
-					row = getLeftRow();
+				while (reader != null && (row = getLeftRow(reader.readLine())) != null) {
 					return true;
 				}
 				
@@ -77,7 +73,11 @@ public class FromIterator implements RAIterator{
 		}
 	}
 	
-	public ArrayList<PrimitiveValue> getLeftRow(){
+	public ArrayList<PrimitiveValue> getLeftRow(String line){
+		if (line == null) {
+			return null;
+		}
+		
 		String[] row = line.split("\\|");
 		int j = 0;
 		ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();

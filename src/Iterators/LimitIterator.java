@@ -13,7 +13,6 @@ public class LimitIterator implements RAIterator{
 	private RAIterator rightIterator = null;
 	private ArrayList<PrimitiveValue> row;
 	private TupleSchema fromSchema;
-	private TupleSchema selectSchema;
 	private Limit limit;
 	private Long currentCount = (long) 0;
 	
@@ -50,7 +49,7 @@ public class LimitIterator implements RAIterator{
 	}
 	
 	public TupleSchema getIteratorSchema() {
-		return selectSchema;
+		return fromSchema;
 	}
 	
 	public void setIteratorSchema() {
