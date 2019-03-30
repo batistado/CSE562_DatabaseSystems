@@ -104,7 +104,7 @@ public class Sort {
 				if (tempFile != null)
 					tempFiles.add(tempFile);
 
-				sortedRows.clear();
+				sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
 			}
 		}
 
@@ -115,7 +115,7 @@ public class Sort {
 
 			if (tempFile != null)
 				tempFiles.add(tempFile);
-			sortedRows.clear();
+			sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
 		}
 		
 		return mergeFiles(tempFiles, orderByElements, fromSchema);
@@ -157,7 +157,7 @@ public class Sort {
 		PriorityQueue<BrIterator> pq = new PriorityQueue<BrIterator>(createComparator(orderByElements, fromSchema));
 		LinkedList<String> queue = new LinkedList<String>();
 
-		System.out.println(tempFiles.size());
+		//System.out.println(tempFiles.size());
 		for (String tempFileI : tempFiles) {
 			queue.add(tempFileI);
 		}
@@ -173,6 +173,8 @@ public class Sort {
 				BrIterator br = new BrIterator(tempFilePath);
 				if (br.hasNext()) {
 					pq.add(br);
+				} else {
+					br = null;
 				}
 				count++;
 			}
@@ -186,6 +188,8 @@ public class Sort {
 					bw.write("\n");
 					if (it.hasNext()) {
 						pq.add(it);
+					} else {
+						it = null;
 					}
 				}
 				bw.close();
@@ -216,20 +220,13 @@ public class Sort {
 
 			@Override
 			public int compare(BrIterator c1, BrIterator c2) {
-				// TODO Auto-generated method stub
-				String line1[] = c1.next().split("\\|");
-				String line2[] = c2.next().split("\\|");
-
-				ArrayList<PrimitiveValue> tmp1 = getRow(line1);
-				ArrayList<PrimitiveValue> tmp2 = getRow(line2);
-
-				return sortComparator(tmp1, tmp2, orderByElements, fromSchema);
+				return sortComparator(getRow(c1.next()), getRow(c2.next()), orderByElements, fromSchema);
 			}
 
-			public ArrayList<PrimitiveValue> getRow(String[] line) {
+			public ArrayList<PrimitiveValue> getRow(String unSplittedLine) {
 				int i = 0;
 				ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
-				for (String word : line) {
+				for (String word : unSplittedLine.split("\\|")) {
 					String colDatatype = fromSchema.getSchemaByIndex(i).getDataType();
 					if (colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
 						StringValue val = new StringValue(word);
