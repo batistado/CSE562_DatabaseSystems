@@ -8,7 +8,6 @@ import java.util.Map;
 
 import Models.Schema;
 import Models.TupleSchema;
-import Utils.utils;
 import dubstep.Main;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -57,7 +56,9 @@ public class FromIterator implements RAIterator{
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
+				line = null;
 				while (reader != null && (line = reader.readLine()) != null) {
+					row = null;
 					row = getLeftRow();
 					return true;
 				}
@@ -107,7 +108,8 @@ public class FromIterator implements RAIterator{
 	}
 	
 	public void setIteratorSchema() {
-		String aliasedTableName = utils.getTableName(table);
+		//String aliasedTableName = utils.getTableName(table);
+		String aliasedTableName = table.getAlias() == null ? table.getName() : table.getAlias();
 		
 		if (!aliasedTableName.equals(table.getName())) {
 		// HERE mark

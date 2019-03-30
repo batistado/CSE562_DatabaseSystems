@@ -24,17 +24,25 @@ import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.PrimitiveValue.InvalidPrimitive;
 import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 
 public class Sort {
+	public static String getColumnName(Column column) {
+		String columnTableName = column.getTable().getName();
+		return columnTableName == null ? column.getColumnName() : columnTableName + "." + column.getColumnName();
+	}
+	
 	public int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		// TODO Auto-generated method stub
 			int c = 0;
 			for (OrderByElement o : orderByElements) {
 				boolean isAscending = o.isAsc();
 
-				PrimitiveValue pa = utils.projectColumnValue(a, o.getExpression(), fromSchema);
-				PrimitiveValue pb = utils.projectColumnValue(b, o.getExpression(), fromSchema);
+				PrimitiveValue pa = a.get(fromSchema.getSchemaByName(getColumnName((Column) o.getExpression())).getColumnIndex());
+				PrimitiveValue pb = b.get(fromSchema.getSchemaByName(getColumnName((Column) o.getExpression())).getColumnIndex());
+				//PrimitiveValue pa = utils.projectColumnValue(a, o.getExpression(), fromSchema);
+				//PrimitiveValue pb = utils.projectColumnValue(b, o.getExpression(), fromSchema);
 				try {
 					if (pa instanceof LongValue && pb instanceof LongValue) {
 						if (pa.toLong() > pb.toLong()) {
@@ -104,7 +112,10 @@ public class Sort {
 				if (tempFile != null)
 					tempFiles.add(tempFile);
 
+				
+//				sortedRows = null;
 				sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
+				System.gc();
 			}
 		}
 
@@ -115,9 +126,15 @@ public class Sort {
 
 			if (tempFile != null)
 				tempFiles.add(tempFile);
+			for (ArrayList<PrimitiveValue> sortedRow: sortedRows) {
+				sortedRow.clear();
+			}
+			
+			sortedRows = null;
 			sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
 		}
 		
+		//return null;
 		return mergeFiles(tempFiles, orderByElements, fromSchema);
 
 	}
@@ -142,8 +159,12 @@ public class Sort {
 			BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
 			for (ArrayList<PrimitiveValue> i : sortedRows) {
 				bw.write(utils.getOutputString(i));
+				//bw.write(i.toString());
 				bw.write("\n");
+				i = null;
 			}
+			sortedRows = null;
+			bw.flush();
 			bw.close();
 			return temp.getAbsolutePath();
 		} catch (IOException e) {
@@ -192,6 +213,7 @@ public class Sort {
 						it = null;
 					}
 				}
+				bw.flush();
 				bw.close();
 				queue.add(temp.getAbsolutePath());
 			} catch (IOException e) {
@@ -212,6 +234,7 @@ public class Sort {
 
 		}
 
+		System.gc();
 		return queue.get(0);
 	}
 
@@ -273,6 +296,7 @@ class BrIterator implements Iterator<String> {
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
+			st = null;
 			if ((st = br.readLine()) != null) {
 				return true;
 			} else {
