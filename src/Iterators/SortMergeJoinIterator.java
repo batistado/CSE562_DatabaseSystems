@@ -186,7 +186,10 @@ public class SortMergeJoinIterator implements RAIterator {
 			
 			leftBufferIndex--;
 			rightBufferIndex = maxRight-1;
+			
+			return;
 		}
+		
 		buffer.add(row);
 		
 		PrimitiveValue joinValue = utils.projectColumnValue(row, ((EqualsTo) joinCondition).getLeftExpression(), fromSchema);
