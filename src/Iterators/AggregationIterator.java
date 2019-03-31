@@ -203,9 +203,11 @@ public class AggregationIterator implements RAIterator{
 					if (functionExpression instanceof Column) {
 						Column aggregateColumn = (Column) functionExpression;
 						colDatatype = fromSchema.getSchemaByName(aggregateColumn.getWholeColumnName()).getDataType();
-					} else {
+					} else if (functionExpression instanceof BinaryExpression){
 						BinaryExpression binaryExpression = (BinaryExpression) functionExpression;
 						colDatatype = utils.getExpressionColumnDatatype(binaryExpression, fromSchema);
+					} else {
+						colDatatype = "int";
 					}
 				}
 				

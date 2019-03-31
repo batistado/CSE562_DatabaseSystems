@@ -137,12 +137,17 @@ public class ProjectIterator implements RAIterator{
 		String aliasedTableName = utils.getTableName(table);
 		Integer offset = columnNumber;
 		
-		Map<String, Schema> schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
+		Map<String, Schema> schemaByName;
+		if (Main.tableSchemas.containsKey(table.getName())) {
+			schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
+		} else {
+			schemaByName = rightIterator.getRightIterator().getIteratorSchema().schemaByName();
+		}
 		
 		for (String name: schemaByName.keySet()) {
 			// Since default columns are referenced as X.A
 			String colName = !aliasedTableName.equals(table.getName()) ? aliasedTableName + "." + name.substring(name.lastIndexOf('.') + 1) : name;
-			Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(name);
+			Schema s = schemaByName.get(name);
 			selectSchema.addTuple(colName, s.getColumnIndex() + offset, s.getDataType());
 			columnNumber++;
 		}

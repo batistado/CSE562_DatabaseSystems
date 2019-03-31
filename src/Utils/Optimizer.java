@@ -33,7 +33,7 @@ public class Optimizer {
 		else if (root instanceof SubQueryIterator) {
 			SubQueryIterator subQueryIterator = (SubQueryIterator) root;
 
-			return new SubQueryIterator(optimizeRA(subQueryIterator.getRightIterator()));
+			return new SubQueryIterator(optimizeRA(subQueryIterator.getRightIterator()), subQueryIterator.getAlias());
 		}
 
 		else if (root instanceof UnionIterator) {

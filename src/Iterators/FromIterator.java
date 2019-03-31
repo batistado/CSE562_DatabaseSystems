@@ -45,7 +45,7 @@ public class FromIterator implements RAIterator{
 	
 	public void initializeReader() {
 		try {
-			reader = new BufferedReader(new FileReader(DIR + table.getName().toLowerCase() + ".csv"));
+			reader = new BufferedReader(new FileReader(DIR + table.getName() + ".csv"));
 		} catch (IOException ex) {
 			ex.printStackTrace();
 		}

@@ -115,7 +115,7 @@ public class Sort {
 				
 //				sortedRows = null;
 				sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
-				System.gc();
+				//System.gc();
 			}
 		}
 
@@ -126,14 +126,10 @@ public class Sort {
 
 			if (tempFile != null)
 				tempFiles.add(tempFile);
-			for (ArrayList<PrimitiveValue> sortedRow: sortedRows) {
-				sortedRow.clear();
-			}
-			
-			sortedRows = null;
 			sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
+			//System.gc();
 		}
-		
+		System.gc();
 		//return null;
 		return mergeFiles(tempFiles, orderByElements, fromSchema);
 
@@ -222,6 +218,7 @@ public class Sort {
 			}
 		}
 
+		System.gc();
 		if (queue.size() == 0) {
 			try {
 				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
@@ -234,7 +231,7 @@ public class Sort {
 
 		}
 
-		System.gc();
+		
 		return queue.get(0);
 	}
 

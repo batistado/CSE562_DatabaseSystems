@@ -94,16 +94,43 @@ public class QueryEvaluator {
 	public RAIterator evaluateSubQuery(PlainSelect selectQuery) {
 		Expression where = selectQuery.getWhere();
 		SubSelect subQuery = (SubSelect) selectQuery.getFromItem();
+		List<Join> joins = selectQuery.getJoins();
 		
-		if (subQuery.getSelectBody() instanceof PlainSelect) {
-			PlainSelect subSelect = (PlainSelect)subQuery.getSelectBody();
-			return where == null ? new SubQueryIterator(evaluatePlainSelect(subSelect)) : new SelectIterator(new SubQueryIterator(evaluatePlainSelect(subSelect)), where);
+		if (joins != null && !joins.isEmpty()) {
+			return evaluateSubQueryJoins(subQuery, joins, where);
 		} 
 		else {
 			// Write Union logic
-			return evaluateUnion((Union) subQuery.getSelectBody());
+			PlainSelect subSelect = (PlainSelect) subQuery.getSelectBody();
+			return where == null ? new SubQueryIterator(evaluatePlainSelect(subSelect), subQuery.getAlias()) : new SelectIterator(new SubQueryIterator(evaluatePlainSelect(subSelect), subQuery.getAlias()), where);
 		}
 		
+	}
+	
+	public RAIterator evaluateSubQueryJoins(SubSelect leftSubSelect, List<Join> joins, Expression filter) {
+		RAIterator iterator = null;
+		
+		if (joins.size() == 1) {
+			SubSelect rightSubSelect = (SubSelect) joins.get(0).getRightItem();
+			iterator = new CrossProductIterator(new SubQueryIterator(evaluatePlainSelect((PlainSelect) leftSubSelect.getSelectBody()), leftSubSelect.getAlias()), new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()), rightSubSelect.getAlias()));
+		} else {
+			Collections.reverse(joins);
+			
+			RAIterator rightIterator = null;
+			for (Join join: joins) {
+				SubSelect rightSubSelect = (SubSelect) join.getRightItem();
+				
+				if (rightIterator == null) {
+					rightIterator = new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()), rightSubSelect.getAlias());
+				} else {
+					rightIterator = new CrossProductIterator(new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()), rightSubSelect.getAlias()), rightIterator);
+				}
+			}
+			
+			iterator = new CrossProductIterator(new SubQueryIterator(evaluatePlainSelect((PlainSelect) leftSubSelect.getSelectBody()), leftSubSelect.getAlias()), rightIterator);
+		}
+		
+		return filter == null ? iterator : new SelectIterator(iterator, filter);
 	}
 	
 	public RAIterator evaluateUnion(Union union){

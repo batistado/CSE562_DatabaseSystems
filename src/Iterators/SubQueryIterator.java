@@ -13,15 +13,35 @@ public class SubQueryIterator implements RAIterator {
 	private RAIterator rightIterator = null;
 	private ArrayList<PrimitiveValue> row;
 	private TupleSchema fromSchema;
+	private String alias;
 	
-	public SubQueryIterator(RAIterator rightIterator) {
+	public SubQueryIterator(RAIterator rightIterator, String alias) {
 		this.rightIterator = rightIterator;
+		this.alias = alias;
 		setIteratorSchema();
 		//System.gc();
 	}
 	
 	public void setIteratorSchema() {
 		fromSchema = rightIterator.getIteratorSchema();
+		
+		TupleSchema rightIteratorSchema = rightIterator.getIteratorSchema();
+		fromSchema = new TupleSchema();
+		
+		Map<String, Schema> schemaByName = rightIteratorSchema.schemaByName();
+		for (String name: schemaByName.keySet()) {
+			String colName = name;
+			Schema s = rightIteratorSchema.getSchemaByName(name);
+			fromSchema.addTuple(colName, s.getColumnIndex(), s.getDataType());
+			
+			if (alias != null) {
+				fromSchema.addTuple(alias + "." + colName, s.getColumnIndex(), s.getDataType());
+			}
+		}
+	}
+	
+	public String getAlias() {
+		return this.alias;
 	}
 
 	@Override
