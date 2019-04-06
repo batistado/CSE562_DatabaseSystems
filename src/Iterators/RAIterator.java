@@ -15,6 +15,8 @@ public interface RAIterator extends Iterator<ArrayList<PrimitiveValue>>  {
 	//public final String DIR = "/Users/msyed3/Downloads/sample queries/Test/50MB Data/";
 	public final String DIR = "data/";
 	
+	public final String TEMP_DIR = "team8_temp/";
+	
 	public void resetWhere();
 	
 	public TupleSchema getIteratorSchema();

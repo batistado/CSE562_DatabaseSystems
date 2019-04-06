@@ -1,5 +1,6 @@
 package dubstep;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -31,6 +32,11 @@ public class Main {
 	        }
 		}
 		
+		// Check and make a temp dir
+		File directory = new File(RAIterator.TEMP_DIR);
+	    if (!directory.exists()){
+	        directory.mkdir();
+	    }
 		
 		CCJSqlParser parser;
 		

@@ -151,7 +151,7 @@ public class Sort {
 
 	public String writeBuffer(ArrayList<ArrayList<PrimitiveValue>> sortedRows) {
 		try {
-			File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
+			File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.TEMP_DIR));
 			BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
 			for (ArrayList<PrimitiveValue> i : sortedRows) {
 				bw.write(utils.getOutputString(i));
@@ -197,7 +197,7 @@ public class Sort {
 			}
 
 			try {
-				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
+				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.TEMP_DIR));
 				BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
 				while (!pq.isEmpty()) {
 					BrIterator it = pq.poll();
@@ -221,7 +221,7 @@ public class Sort {
 		System.gc();
 		if (queue.size() == 0) {
 			try {
-				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.DIR));
+				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.TEMP_DIR));
 				return temp.getAbsolutePath();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
