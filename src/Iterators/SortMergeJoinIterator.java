@@ -71,6 +71,7 @@ public class SortMergeJoinIterator implements RAIterator {
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
+			System.out.println("File names not found " + leftFileName + " " + rightFileName);
 			e.printStackTrace();
 		}
 	}
