@@ -5,9 +5,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import Models.Schema;
 import Models.TupleSchema;
 import Utils.Sort;
 import dubstep.Main;

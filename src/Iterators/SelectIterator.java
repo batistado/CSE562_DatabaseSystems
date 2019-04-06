@@ -1,9 +1,6 @@
 package Iterators;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import Models.Schema;
 import Models.TupleSchema;
 import Utils.utils;
 import net.sf.jsqlparser.expression.Expression;
