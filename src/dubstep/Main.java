@@ -3,24 +3,30 @@ package dubstep;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import Indexes.BPlusTree;
+import Indexes.Indexer;
 import Iterators.RAIterator;
 import Utils.*;
 import Models.TupleSchema;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
+import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.select.Select;
 
 public class Main {
 	public static Map<String, TupleSchema> tableSchemas = new HashMap<>();
 	public static boolean isInMemory;
 	public static int sortedRunSize = 2;
-	public static int sortBufferSize = 5000;
+	public static int sortBufferSize = 500;
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
@@ -71,7 +77,9 @@ public class Main {
 			ts.addTuple(table.getTable().getName() + "." + columnDefinition.getColumnName(), i, columnDefinition.getColDataType().getDataType().toLowerCase());
 			i++;
 		}
+		
 		tableSchemas.put(table.getTable().getName(), ts);
+		Indexer.addIndexes(table);
 	}
 	
 	public static RAIterator evaluateQuery(Select selectQuery) {

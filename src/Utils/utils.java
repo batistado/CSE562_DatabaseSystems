@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 import Models.TupleSchema;
+import dubstep.Main;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.DateValue;
@@ -17,14 +18,102 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.PrimitiveValue.InvalidPrimitive;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 public class utils {
+	public static int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
+		// TODO Auto-generated method stub
+			int c = 0;
+			for (OrderByElement o : orderByElements) {
+				boolean isAscending = o.isAsc();
+
+				PrimitiveValue pa = a.get(fromSchema.getSchemaByName(getColumnName((Column) o.getExpression())).getColumnIndex());
+				PrimitiveValue pb = b.get(fromSchema.getSchemaByName(getColumnName((Column) o.getExpression())).getColumnIndex());
+
+				try {
+					if (pa instanceof LongValue && pb instanceof LongValue) {
+						if (pa.toLong() > pb.toLong()) {
+							c = 1;
+						}
+						if (pa.toLong() < pb.toLong()) {
+							c = -1;
+						}
+					} else if (pa instanceof DoubleValue && pb instanceof DoubleValue) {
+						c = Double.compare(pa.toDouble(), pb.toDouble());
+					} else if (pa instanceof DateValue && pb instanceof DateValue) {
+						DateValue dpa = (DateValue) pa;
+						DateValue dpb = (DateValue) pb;
+
+						if ((dpa.getYear() * 10000 + dpa.getMonth() * 100
+								+ dpa.getDate()) > (dpb.getYear() * 10000 + dpb.getMonth() * 100
+										+ dpb.getDate())) {
+							c = 1;
+						}
+						if ((dpa.getYear() * 10000 + dpa.getMonth() * 100
+								+ dpa.getDate()) < (dpb.getYear() * 10000 + dpb.getMonth() * 100
+										+ dpb.getDate())) {
+							c = -1;
+						}
+					} else if (pa instanceof StringValue && pb instanceof StringValue) {
+						c = pa.toString().compareTo(pb.toString());
+					} else {
+						c = pa.toString().compareTo(pb.toString());
+					}
+
+					if (c != 0) {
+						c = isAscending ? c : -1 * c;
+						break;
+					}
+				} catch (InvalidPrimitive i) {
+					i.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				}
+			}
+			return c;
+	}
+	
+	public static ArrayList<PrimitiveValue> splitLine(String line, Table table){
+		if (line == null) {
+			return null;
+		}
+		
+		String[] row = line.split("\\|");
+		int j = 0;
+		ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
+		for(String x : row) {
+			String colDatatype = Main.tableSchemas.get(table.getName()).getSchemaByIndex(j).getDataType();
+			if(colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+				StringValue val = new StringValue(x);
+				tmp.add(val);
+			}
+			else if(colDatatype.equals("int")){
+				LongValue val = new LongValue(x);
+				tmp.add(val);
+			}
+			else if(colDatatype.equals("decimal")) {
+				DoubleValue val = new DoubleValue(x);
+				tmp.add(val);
+			}
+			else if(colDatatype.equals("date")){
+				DateValue val = new DateValue(x);
+				tmp.add(val);
+			}
+			
+			j++;
+			
+		}
+		
+		return tmp;
+	}
+	
 	public static boolean areEqual(PrimitiveValue pa, PrimitiveValue pb) {
 		try {
 			if (pa instanceof LongValue && pb instanceof LongValue) {
@@ -57,7 +146,36 @@ public class utils {
 		return false;
 	}
 	
-	
+	public static int primitiveValueComparator(PrimitiveValue pa, PrimitiveValue pb) {
+		try {
+			if (pa instanceof LongValue && pb instanceof LongValue) {
+				return Long.compare(pa.toLong(), pb.toLong());
+			} else if (pa instanceof DoubleValue && pb instanceof DoubleValue) {
+				return Double.compare(pa.toDouble(), pb.toDouble());
+			} else if (pa instanceof DateValue && pb instanceof DateValue) {
+				DateValue dpa = (DateValue) pa;
+				DateValue dpb = (DateValue) pb;
+
+				if ((dpa.getYear() * 10000 + dpa.getMonth() * 100 + dpa.getDate()) > (dpb.getYear() * 10000
+						+ dpb.getMonth() * 100 + dpb.getDate())) {
+					return 1;
+				} else if ((dpa.getYear() * 10000 + dpa.getMonth() * 100 + dpa.getDate()) < (dpb.getYear() * 10000
+						+ dpb.getMonth() * 100 + dpb.getDate())) {
+					return -1;
+				} else 
+					return 0;
+			} else {
+				return pa.toString().compareTo(pb.toString());
+			}
+			
+		} catch (InvalidPrimitive i) {
+			i.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		}
+		
+		return 0;
+	}
 	
 	public static String getOutputString(List<PrimitiveValue> resultList) {
 	    StringBuffer sb = new StringBuffer();
@@ -227,4 +345,23 @@ public class utils {
 		}
 		
 	}
+	
+	public static Boolean boolEval(PrimitiveValue value, Expression expression){
+		Eval eval = new Eval() {
+			@Override
+			public PrimitiveValue eval(Column col) throws SQLException {
+				return value;
+			}
+		};
+		
+		try {
+			return eval.eval(expression).toBool();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+	}
+	
+	
 }
