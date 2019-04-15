@@ -114,6 +114,40 @@ public class utils {
 		return tmp;
 	}
 	
+	public static PrimitiveValue[] splitLineArray(String line, Table table){
+		if (line == null) {
+			return null;
+		}
+		
+		String[] row = line.split("\\|");
+		int j = 0;
+		PrimitiveValue[] tmp = new PrimitiveValue[row.length];
+		for(String x : row) {
+			String colDatatype = Main.tableSchemas.get(table.getName()).getSchemaByIndex(j).getDataType();
+			if(colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+				StringValue val = new StringValue(x);
+				tmp[j] = val;
+			}
+			else if(colDatatype.equals("int")){
+				LongValue val = new LongValue(x);
+				tmp[j] = val;
+			}
+			else if(colDatatype.equals("decimal")) {
+				DoubleValue val = new DoubleValue(x);
+				tmp[j] = val;
+			}
+			else if(colDatatype.equals("date")){
+				DateValue val = new DateValue(x);
+				tmp[j] = val;
+			}
+			
+			j++;
+			
+		}
+		
+		return tmp;
+	}
+	
 	public static boolean areEqual(PrimitiveValue pa, PrimitiveValue pb) {
 		try {
 			if (pa instanceof LongValue && pb instanceof LongValue) {
