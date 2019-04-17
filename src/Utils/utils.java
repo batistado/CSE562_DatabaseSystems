@@ -88,8 +88,11 @@ public class utils {
 		String[] row = line.split("\\|");
 		int j = 0;
 		ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
+		
+		TupleSchema ts = Main.tableSchemas.get(table.getName());
+		
 		for(String x : row) {
-			String colDatatype = Main.tableSchemas.get(table.getName()).getSchemaByIndex(j).getDataType();
+			String colDatatype = ts.getSchemaByIndex(j).getDataType();
 			if(colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
 				StringValue val = new StringValue(x);
 				tmp.add(val);
@@ -105,40 +108,6 @@ public class utils {
 			else if(colDatatype.equals("date")){
 				DateValue val = new DateValue(x);
 				tmp.add(val);
-			}
-			
-			j++;
-			
-		}
-		
-		return tmp;
-	}
-	
-	public static PrimitiveValue[] splitLineArray(String line, Table table){
-		if (line == null) {
-			return null;
-		}
-		
-		String[] row = line.split("\\|");
-		int j = 0;
-		PrimitiveValue[] tmp = new PrimitiveValue[row.length];
-		for(String x : row) {
-			String colDatatype = Main.tableSchemas.get(table.getName()).getSchemaByIndex(j).getDataType();
-			if(colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
-				StringValue val = new StringValue(x);
-				tmp[j] = val;
-			}
-			else if(colDatatype.equals("int")){
-				LongValue val = new LongValue(x);
-				tmp[j] = val;
-			}
-			else if(colDatatype.equals("decimal")) {
-				DoubleValue val = new DoubleValue(x);
-				tmp[j] = val;
-			}
-			else if(colDatatype.equals("date")){
-				DateValue val = new DateValue(x);
-				tmp[j] = val;
 			}
 			
 			j++;

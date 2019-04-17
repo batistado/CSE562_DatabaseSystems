@@ -13,12 +13,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Queue;
 
 import Iterators.RAIterator;
 import Models.TupleSchema;
@@ -46,7 +49,7 @@ public class BPlusTree {
 		EXCLUSIVE, INCLUSIVE
 	}
 
-	private static final int DEFAULT_BRANCHING_FACTOR = 128;
+	private static final int DEFAULT_BRANCHING_FACTOR = 50;
 	private int branchingFactor;
 
 	private Node root;
@@ -76,11 +79,11 @@ public class BPlusTree {
 	public void closeIndex() {
 		LeafNode head = (LeafNode) root.getFirstLeafNode();
 
-		while (head != null) {
-			head.writeBuffersToDisk();
+		while (head.next != null) {
 			head = head.next;
 		}
-		System.gc();
+		
+		head.dumpToDisk();
 	}
 
 	private void setIndexOnElements() {
@@ -123,72 +126,109 @@ public class BPlusTree {
 		PrimitiveValue key = utils.projectColumnValue(value, indexOnElements.get(0),
 				Main.tableSchemas.get(utils.getTableName(table)));
 
-		root.insertValue(key, value);
+		root = root.insertValue(key, value);
+	}
+	
+	public String toString() {
+		Queue<List<Node>> queue = new LinkedList<List<Node>>();
+		queue.add(Arrays.asList(root));
+		StringBuilder sb = new StringBuilder();
+		while (!queue.isEmpty()) {
+			Queue<List<Node>> nextQueue = new LinkedList<List<Node>>();
+			while (!queue.isEmpty()) {
+				List<Node> nodes = queue.remove();
+				sb.append('{');
+				Iterator<Node> it = nodes.iterator();
+				while (it.hasNext()) {
+					Node node = it.next();
+					sb.append(node.toString());
+					if (it.hasNext())
+						sb.append(", ");
+					if (node instanceof BPlusTree.InternalNode)
+						nextQueue.add(((InternalNode) node).children);
+				}
+				sb.append('}');
+				if (!queue.isEmpty())
+					sb.append(", ");
+				else
+					sb.append('\n');
+			}
+			queue = nextQueue;
+		}
+
+		return sb.toString();
 	}
 
 	private class LeafNode extends Node {
-		List<String> values;
-		List<LinkedList<ArrayList<PrimitiveValue>>> buffers;
+		String fileName;
+		ArrayList<ArrayList<PrimitiveValue>> buffer;
 		LeafNode next;
+		PrimitiveValue lastKey;
 
 		LeafNode() {
-			buffers = new ArrayList<LinkedList<ArrayList<PrimitiveValue>>>();
+			buffer = new ArrayList<ArrayList<PrimitiveValue>>();
 			keys = new ArrayList<PrimitiveValue>();
-			values = new ArrayList<String>();
+			fileName = null;
+			lastKey = null;
 		}
 
 		@Override
 		String getValue(PrimitiveValue key) {
-			int loc = Collections.binarySearch(keys, key, c);
-			return loc >= 0 ? values.get(loc) : null;
+			return fileName;
 		}
 
 		@Override
-		void insertValue(PrimitiveValue key, ArrayList<PrimitiveValue> value) {
+		Node insertValue(PrimitiveValue key, ArrayList<PrimitiveValue> value) {
 			int loc = Collections.binarySearch(keys, key, c);
 			int valueIndex = loc >= 0 ? loc : -loc - 1;
 			totalBufferSize++;
 
-			// Key already exists
-			if (loc >= 0) {
-				LinkedList<ArrayList<PrimitiveValue>> buffer = buffers.get(valueIndex);
-
-				buffer.add(value);
-
-				if (totalBufferSize > Main.sortBufferSize) {
-					totalBufferSize = 0;
-					closeIndex();
-
-					
-					
-//					values.set(valueIndex, writeToFile(buffer, values.get(valueIndex)));
-//					buffer.clear();
-				}
-			} else {
+//			// Key already exists
+//			if (loc >= 0) {
+//				LinkedList<ArrayList<PrimitiveValue>> buffer = buffers.get(valueIndex);
+//
+//				buffer.add(value);
+//
+////				if (totalBufferSize > Main.sortBufferSize) {
+////					totalBufferSize = 0;
+////					closeIndex();
+////				}
+//			} else {
+//				keys.add(valueIndex, key);
+//				values.add(valueIndex, null);
+//				LinkedList<ArrayList<PrimitiveValue>> buffer = new LinkedList<ArrayList<PrimitiveValue>>();
+//				buffer.add(value);
+//				buffers.add(valueIndex, buffer);
+//			}
+			if (loc < 0) {
 				keys.add(valueIndex, key);
-				values.add(valueIndex, null);
-				LinkedList<ArrayList<PrimitiveValue>> buffer = new LinkedList<ArrayList<PrimitiveValue>>();
-				buffer.add(value);
-				buffers.add(valueIndex, buffer);
+				lastKey = key;
 			}
-
-			if (root.isOverflow()) {
+			
+				
+			if (buffer.size() > branchingFactor - 1 && key != lastKey) {
 				Node sibling = split();
+				((LeafNode) sibling).insertValue(key, value);
 				InternalNode newRoot = new InternalNode();
 				newRoot.keys.add(sibling.getFirstLeafKey());
 				newRoot.children.add(this);
 				newRoot.children.add(sibling);
-				root = newRoot;
+				return newRoot;
+				
+			} else {
+				buffer.add(value);
 			}
+			
+			return this;
 		}
 
-		void writeBuffersToDisk() {
-			for (int i = 0; i < values.size(); i++) {
-				values.set(i, writeToFile(buffers.get(i), values.get(i)));
-				buffers.get(i).clear();
-				// System.out.println(buffers.get(i).size());
-			}
-		}
+//		void writeBuffersToDisk() {
+//			for (int i = 0; i < values.size(); i++) {
+//				values.set(i, writeToFile(buffers.get(i), values.get(i)));
+//				//buffers.get(i).clear();
+//				//System.out.println(buffers.get(i).size());
+//			}
+//		}
 
 		public void sort(LinkedList<ArrayList<PrimitiveValue>> buffer, List<OrderByElement> orderByElements,
 				TupleSchema fromSchema) {
@@ -204,41 +244,54 @@ public class BPlusTree {
 				e.printStackTrace();
 			}
 		}
-		
-		private String writeToFile(LinkedList<ArrayList<PrimitiveValue>> rows, String fileName) {
-			if (!isSorted)
-				return sortAndWriteToFile(rows, fileName);
-			
+
+		private String writeToFile(List<ArrayList<PrimitiveValue>> rows, String fileName) {
+//			if (!isSorted)
+//				return sortAndWriteToFile(rows, fileName);
+
 			File temp = null;
-			if (fileName == null) {
-				try {
-					temp = File.createTempFile("Temp", ".csv", new File(RAIterator.TEMP_DIR));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} else {
-				temp = new File(RAIterator.TEMP_DIR + fileName);
-			}
-			
+
 			FileOutputStream fout;
 			try {
+				temp = File.createTempFile("Temp", ".csv", new File(RAIterator.TEMP_DIR));
 				fout = new FileOutputStream(temp);
 				ObjectOutputStream oos = new ObjectOutputStream(fout);
-				
-				while (rows.size() > 0) {
-					oos.writeObject(rows.poll());
+
+				if (fileName != null) {
+					FileInputStream fis = new FileInputStream(RAIterator.TEMP_DIR + fileName);
+					ObjectInputStream ois = new ObjectInputStream(fis);
+
+					try {
+						while (true) {
+							oos.writeObject((ArrayList<PrimitiveValue>) ois.readObject());
+							oos.reset();
+						}
+
+					} catch (ClassNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (EOFException eof) {
+						ois.close();
+					}
+				}
+
+				for (ArrayList<PrimitiveValue> row: rows) {
+					oos.writeObject(row);
 					oos.reset();
 				}
+				
+				rows.clear();
+				
 				oos.close();
+
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
 			return temp.getName();
-			
+
 		}
-		
+
 		private String sortAndWriteToFile(LinkedList<ArrayList<PrimitiveValue>> rows, String fileName) {
 			try {
 				File temp = File.createTempFile("Temp", ".csv", new File(RAIterator.TEMP_DIR));
@@ -318,65 +371,79 @@ public class BPlusTree {
 		Node getFirstLeafNode() {
 			return this;
 		}
+		
+		void dumpToDisk() {
+			fileName = writeToFile(buffer, null);
+		}
 
 		@Override
 		List<String> getRange(PrimitiveValue left, RangePolicy leftPolicy, PrimitiveValue right,
 				RangePolicy rightPolicy) {
-			List<String> result = new LinkedList<String>();
-
-			LeafNode node = this;
-			while (node != null) {
-				Iterator<PrimitiveValue> kIt = node.keys.iterator();
-				Iterator<String> vIt = node.values.iterator();
-				while (kIt.hasNext()) {
-					PrimitiveValue key = kIt.next();
-					String value = vIt.next();
-
-					Integer cmp1 = null;
-					Integer cmp2 = null;
-
-					if (left != null) {
-						cmp1 = utils.primitiveValueComparator(key, left);
-					}
-
-					if (right != null) {
-						cmp2 = utils.primitiveValueComparator(key, right);
-					}
-
-					if (cmp1 != null) {
-						if ((leftPolicy == RangePolicy.EXCLUSIVE && cmp1 > 0)
-								|| (leftPolicy == RangePolicy.INCLUSIVE && cmp1 >= 0)) {
-							if (cmp2 == null || (rightPolicy == RangePolicy.EXCLUSIVE && cmp2 < 0)
-									|| (rightPolicy == RangePolicy.INCLUSIVE && cmp2 <= 0)) {
-								result.add(value);
-							} else
-								return result;
-						}
-					} else {
-						if ((rightPolicy == RangePolicy.EXCLUSIVE && cmp2 < 0)
-								|| (rightPolicy == RangePolicy.INCLUSIVE && cmp2 <= 0)) {
-							result.add(value);
-						} else
-							return result;
-					}
-					return result;
-				}
-				node = node.next;
-			}
-			return result;
+			return null;
+//			List<String> result = new LinkedList<String>();
+//
+//			LeafNode node = this;
+//			while (node != null) {
+//				Iterator<PrimitiveValue> kIt = node.keys.iterator();
+//				Iterator<String> vIt = node.values.iterator();
+//				while (kIt.hasNext()) {
+//					PrimitiveValue key = kIt.next();
+//					String value = vIt.next();
+//
+//					Integer cmp1 = null;
+//					Integer cmp2 = null;
+//
+//					if (left != null) {
+//						cmp1 = utils.primitiveValueComparator(key, left);
+//					}
+//
+//					if (right != null) {
+//						cmp2 = utils.primitiveValueComparator(key, right);
+//					}
+//
+//					if (cmp1 != null) {
+//						if ((leftPolicy == RangePolicy.EXCLUSIVE && cmp1 > 0)
+//								|| (leftPolicy == RangePolicy.INCLUSIVE && cmp1 >= 0)) {
+//							if (cmp2 == null || (rightPolicy == RangePolicy.EXCLUSIVE && cmp2 < 0)
+//									|| (rightPolicy == RangePolicy.INCLUSIVE && cmp2 <= 0)) {
+//								result.add(value);
+//							} else
+//								return result;
+//						}
+//					} else {
+//						if ((rightPolicy == RangePolicy.EXCLUSIVE && cmp2 < 0)
+//								|| (rightPolicy == RangePolicy.INCLUSIVE && cmp2 <= 0)) {
+//							result.add(value);
+//						} else
+//							return result;
+//					}
+//					return result;
+//				}
+//				node = node.next;
+//			}
+//			return result;
 		}
 
 		@Override
 		Node split() {
 			LeafNode sibling = new LeafNode();
-			int from = (keyNumber() + 1) / 2, to = keyNumber();
-			sibling.keys.addAll(keys.subList(from, to));
-			sibling.values.addAll(values.subList(from, to));
-			sibling.buffers.addAll(buffers.subList(from, to));
-
-			keys.subList(from, to).clear();
-			values.subList(from, to).clear();
-			buffers.subList(from, to).clear();
+//			int bufferSize = this.buffer.size();
+//			
+//			PrimitiveValue prevValue = utils.projectColumnValue(buffer.get(bufferSize / 2), indexOnElements.get(0),
+//					Main.tableSchemas.get(utils.getTableName(table)));
+//			
+//			int i = bufferSize / 2 + 1;
+//			PrimitiveValue currValue = utils.projectColumnValue(buffer.get(i), indexOnElements.get(0),
+//					Main.tableSchemas.get(utils.getTableName(table)));
+//			
+//			while (utils.areEqual(prevValue, currValue) && i < buffer.size()) {
+//				currValue = utils.projectColumnValue(buffer.get(bufferSize / 2), indexOnElements.get(0),
+//						Main.tableSchemas.get(utils.getTableName(table)));
+//				i++;
+//			}
+			
+//			int from = 0, to = buffer.size() - 1;
+			this.fileName = writeToFile(buffer, null);
 
 			sibling.next = next;
 			next = sibling;
@@ -385,12 +452,12 @@ public class BPlusTree {
 
 		@Override
 		boolean isOverflow() {
-			return values.size() > branchingFactor - 1;
+			return this.buffer.size() > branchingFactor - 1;
 		}
 
 		@Override
 		boolean isUnderflow() {
-			return values.size() < branchingFactor / 2;
+			return false;
 		}
 	}
 
@@ -405,7 +472,7 @@ public class BPlusTree {
 
 		abstract Node getFirstLeafNode();
 
-		abstract void insertValue(PrimitiveValue key, ArrayList<PrimitiveValue> value);
+		abstract Node insertValue(PrimitiveValue key, ArrayList<PrimitiveValue> value);
 
 		abstract PrimitiveValue getFirstLeafKey();
 
@@ -437,21 +504,28 @@ public class BPlusTree {
 		}
 
 		@Override
-		void insertValue(PrimitiveValue key, ArrayList<PrimitiveValue> value) {
+		Node insertValue(PrimitiveValue key, ArrayList<PrimitiveValue> value) {
 			Node child = getChild(key);
-			child.insertValue(key, value);
-			if (child.isOverflow()) {
-				Node sibling = child.split();
-				insertChild(sibling.getFirstLeafKey(), sibling);
+			Node returnedChild = child.insertValue(key, value);
+			
+			if (!returnedChild.equals(child)) {
+				insertChild(returnedChild.getFirstLeafKey(), returnedChild);
 			}
+			
+//			if (child.isOverflow()) {
+//				Node sibling = child.split();
+//				insertChild(sibling.getFirstLeafKey(), sibling);
+//			}
 			if (root.isOverflow()) {
 				Node sibling = split();
 				InternalNode newRoot = new InternalNode();
 				newRoot.keys.add(sibling.getFirstLeafKey());
 				newRoot.children.add(this);
 				newRoot.children.add(sibling);
-				root = newRoot;
+				return newRoot;
 			}
+			
+			return this;
 		}
 
 		@Override

@@ -12,7 +12,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,14 +54,23 @@ public class Indexer {
 			BufferedReader br = new BufferedReader(new FileReader(RAIterator.DIR + utils.getTableName(table) + ".csv"));
 			String line = null;
 			while ((line = br.readLine()) != null) {
+				//buffer.add(utils.splitLine(line, table));
 				index.insert(utils.splitLine(line, table));
+
 			}
 			index.closeIndex();
+			
 			System.gc();
+			
+			//RandomAccessFile raf = new RandomAccessFile(new File(RAIterator.DIR + utils.getTableName(table) + ".csv"), "r");
+			
 			br.close();
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+//				index.insert(utils.splitLine(line, table));
 	}
 }
+//			index.closeIndex();
