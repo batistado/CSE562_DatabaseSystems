@@ -211,8 +211,8 @@ public class Optimizer {
 					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
 
 					if (treeSearchObjects == null) {
-						expressionList.add(selectExpression);
-//						leftIterator = new SelectIterator(leftIterator, selectExpression);
+						//expressionList.add(selectExpression);
+						leftIterator = new SelectIterator(leftIterator, selectExpression);
 					} else {
 						for (TreeSearch treeSearchObject : treeSearchObjects) {
 							if (treeSearchObject.operation.equals("EQUALS")) {
@@ -228,12 +228,12 @@ public class Optimizer {
 								new ArrayList<String>(fileNames), selectExpression);
 					}
 				} else {
-					expressionList.add(selectExpression);
-//					leftIterator = new SelectIterator(leftIterator, selectExpression);
+					//expressionList.add(selectExpression);
+					leftIterator = new SelectIterator(leftIterator, selectExpression);
 				}
 			} else {
-				expressionList.add(selectExpression);
-//				leftIterator = new SelectIterator(leftIterator, selectExpression);
+				//expressionList.add(selectExpression);
+				leftIterator = new SelectIterator(leftIterator, selectExpression);
 			}
 		}
 
@@ -282,7 +282,8 @@ public class Optimizer {
 					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
 
 					if (treeSearchObjects == null) {
-						expressionList.add(selectExpression);
+//						expressionList.add(selectExpression);
+						rightIterator = new SelectIterator(rightIterator, selectExpression);
 					} else {
 						for (TreeSearch treeSearchObject : treeSearchObjects) {
 							if (treeSearchObject.operation.equals("EQUALS")) {
@@ -298,12 +299,12 @@ public class Optimizer {
 								new ArrayList<String>(fileNames), selectExpression);
 					}
 				} else {
-					expressionList.add(selectExpression);
-//					rightIterator = new SelectIterator(rightIterator, selectExpression);
+	//				expressionList.add(selectExpression);
+					rightIterator = new SelectIterator(rightIterator, selectExpression);
 				}
 			} else {
-				expressionList.add(selectExpression);
-//				rightIterator = new SelectIterator(rightIterator, selectExpression);
+//				expressionList.add(selectExpression);
+				rightIterator = new SelectIterator(rightIterator, selectExpression);
 			}
 		}
 		
@@ -314,10 +315,23 @@ public class Optimizer {
 			Column rightColumn = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
 			
 			if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
+				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
+				
+				if (selectExpression != null) {
+					rightIterator = new SelectIterator(rightIterator, selectExpression);
+				}
+				
 				return new BlockNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
 						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), anyJoinCondition);
 			} else if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
 				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+				
+				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
+				
+				if (selectExpression != null) {
+					leftIterator = new SelectIterator(leftIterator, selectExpression);
+				}
+				
 				return new BlockNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
 						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), swappedExpression, true);
 			}
@@ -368,7 +382,12 @@ public class Optimizer {
 						|| (binaryExpression.getRightExpression() instanceof Column
 								&& !(binaryExpression.getLeftExpression() instanceof Column)
 								&& iterator.getIteratorSchema().containsKey(
-										utils.getColumnName((Column) binaryExpression.getRightExpression())))) {
+										utils.getColumnName((Column) binaryExpression.getRightExpression()))) || ((binaryExpression.getLeftExpression() instanceof Column
+												&& (binaryExpression.getRightExpression() instanceof Column)
+												&& iterator.getIteratorSchema()
+												.containsKey(utils.getColumnName((Column) binaryExpression.getRightExpression()))
+												&& iterator.getIteratorSchema()
+														.containsKey(utils.getColumnName((Column) binaryExpression.getLeftExpression()))))) {
 					expressions.remove(e);
 					tmp.add(binaryExpression);
 				}

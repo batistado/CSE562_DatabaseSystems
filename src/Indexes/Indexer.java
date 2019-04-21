@@ -39,12 +39,13 @@ public class Indexer {
 					indexOnColumns.add(new Column(createTable.getTable(), colName));
 				}
 
-				//boolean isSorted = tableIndex.getType().equals("PRIMARY KEY");
-				PrimaryIndex index = new PrimaryIndex(createTable.getTable(), indexOnColumns);
-				fillIndex(index, createTable.getTable());
-
-				indexMapping.put(utils.getTableName(createTable.getTable()) + "." + tableIndex.getColumnsNames().get(0), index);
-				indexMapping.put(tableIndex.getColumnsNames().get(0), index);
+				if (tableIndex.getType().equals("PRIMARY KEY")) {
+					PrimaryIndex index = new PrimaryIndex(createTable.getTable(), indexOnColumns);
+					fillIndex(index, createTable.getTable());
+	
+					indexMapping.put(utils.getTableName(createTable.getTable()) + "." + tableIndex.getColumnsNames().get(0), index);
+					indexMapping.put(tableIndex.getColumnsNames().get(0), index);
+				}
 			}
 		}
 		
