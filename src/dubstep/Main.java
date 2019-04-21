@@ -1,14 +1,19 @@
 package dubstep;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import Indexes.BPlusTree;
+import Indexes.PrimaryIndex;
 import Indexes.Indexer;
 import Iterators.RAIterator;
 import Utils.*;
@@ -25,8 +30,8 @@ import net.sf.jsqlparser.statement.select.Select;
 public class Main {
 	public static Map<String, TupleSchema> tableSchemas = new HashMap<>();
 	public static boolean isInMemory;
-	public static int sortedRunSize = 2;
-	public static int sortBufferSize = 5000000;
+	public static int sortedRunSize = 10;
+	public static int sortBufferSize = 100000;
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
@@ -80,9 +85,45 @@ public class Main {
 		
 		tableSchemas.put(table.getTable().getName(), ts);
 		Indexer.addIndexes(table);
+		writeSchemaToDisk();
+	}
+	
+	public static void writeSchemaToDisk() {
+		try {
+			ObjectOutputStream indexWriter = new ObjectOutputStream(new FileOutputStream(RAIterator.TEMP_DIR + "Schema.csv"));
+			indexWriter.writeObject(tableSchemas);
+			indexWriter.reset();
+			indexWriter.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public static RAIterator evaluateQuery(Select selectQuery) {
+		if (Main.tableSchemas.isEmpty()) {
+			try {
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Index.csv"));
+				Indexer.indexMapping = (Map<String, PrimaryIndex>) ois.readObject();
+				ois.close();
+				
+				ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Schema.csv"));
+				tableSchemas = (Map<String, TupleSchema>) ois.readObject();
+				ois.close();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ClassNotFoundException ex) {
+				ex.printStackTrace();
+			}
+		}
+		
 		return new Optimizer().optimizeRA(new QueryEvaluator().evaluateQuery(selectQuery));
 		//return new QueryEvaluator().evaluateQuery(selectQuery);
 	}

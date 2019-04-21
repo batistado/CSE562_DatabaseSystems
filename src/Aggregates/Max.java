@@ -15,6 +15,7 @@ public class Max implements Aggregate {
 	private PrimitiveType type;
 	private Integer index;
 	private Expression expression;
+	private String stringType;
 
 	public Max(String type, Integer index, Expression expression) {
 		if (type.equals("int")) {
@@ -29,6 +30,7 @@ public class Max implements Aggregate {
 			this.type = PrimitiveType.DOUBLE;
 		}
 		
+		this.stringType = type;
 		this.index = index;
 		this.expression = expression;
 	}
@@ -86,6 +88,12 @@ public class Max implements Aggregate {
 		}
 		
 		this.addValue(newValue);
+	}
+	
+	@Override
+	public String getDataType() {
+		// TODO Auto-generated method stub
+		return stringType;
 	}
 }
 

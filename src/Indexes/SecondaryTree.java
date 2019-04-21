@@ -36,7 +36,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 
-public class BPlusTree {
+public class SecondaryTree {
 	Comparator<PrimitiveValue> c = new Comparator<PrimitiveValue>() {
 		@Override
 		public int compare(PrimitiveValue o1, PrimitiveValue o2) {
@@ -49,29 +49,25 @@ public class BPlusTree {
 		EXCLUSIVE, INCLUSIVE
 	}
 
-	private static final int DEFAULT_BRANCHING_FACTOR = 50;
+	private static final int DEFAULT_BRANCHING_FACTOR = 50000;
 	private int branchingFactor;
 
 	private Node root;
 	private Table table;
 	private List<Column> indexOnElements;
 	private List<OrderByElement> orderByElements;
-	private boolean isSorted = false;
-	private int totalBufferSize;
 
-	public BPlusTree(Table table, List<Column> indexOnElements, boolean isSorted) {
+	public SecondaryTree(Table table, List<Column> indexOnElements, boolean isSorted) {
 		this(DEFAULT_BRANCHING_FACTOR, table, indexOnElements, isSorted);
 	}
 
-	public BPlusTree(int branchingFactor, Table table, List<Column> indexOnElements, boolean isSorted) {
+	public SecondaryTree(int branchingFactor, Table table, List<Column> indexOnElements, boolean isSorted) {
 		if (branchingFactor <= 2)
 			throw new IllegalArgumentException("Illegal branching factor: " + branchingFactor);
 		this.branchingFactor = branchingFactor;
 		root = new LeafNode();
 		this.table = table;
 		this.indexOnElements = indexOnElements;
-		this.totalBufferSize = 0;
-		this.isSorted = isSorted;
 
 		setIndexOnElements();
 	}
@@ -105,23 +101,6 @@ public class BPlusTree {
 		return root.getRange(key1, policy1, key2, policy2);
 	}
 
-//	private BinaryExpression getGreaterThanExpression(Expression expression, Expression type) {
-//		BinaryExpression binaryExpression = (BinaryExpression) expression;
-//		if ((binaryExpression instanceof GreaterThan || binaryExpression instanceof GreaterThanEquals) && ((binaryExpression.getLeftExpression() instanceof Column) || (binaryExpression.getRightExpression() instanceof Column))) {
-//			Column column = (Column) (binaryExpression.getLeftExpression() instanceof Column ? ((BinaryExpression) binaryExpression).getLeftExpression(): ((BinaryExpression) binaryExpression).getRightExpression());
-//			
-//			if (utils.getColumnName(column).equals(utils.getColumnName(primaryColumn))) {
-//				return (BinaryExpression) binaryExpression;
-//			} else {
-//				return null;
-//			}
-//		}
-//		
-//		BinaryExpression left = getPrimaryExpression(((BinaryExpression) binaryExpression).getLeftExpression());
-//		BinaryExpression right = getPrimaryExpression(((BinaryExpression) binaryExpression).getRightExpression());
-//		return  left != null ? left : right;
-//	}
-
 	public void insert(ArrayList<PrimitiveValue> value) {
 		PrimitiveValue key = utils.projectColumnValue(value, indexOnElements.get(0),
 				Main.tableSchemas.get(utils.getTableName(table)));
@@ -144,7 +123,7 @@ public class BPlusTree {
 					sb.append(node.toString());
 					if (it.hasNext())
 						sb.append(", ");
-					if (node instanceof BPlusTree.InternalNode)
+					if (node instanceof SecondaryTree.InternalNode)
 						nextQueue.add(((InternalNode) node).children);
 				}
 				sb.append('}');
@@ -181,7 +160,6 @@ public class BPlusTree {
 		Node insertValue(PrimitiveValue key, ArrayList<PrimitiveValue> value) {
 			int loc = Collections.binarySearch(keys, key, c);
 			int valueIndex = loc >= 0 ? loc : -loc - 1;
-			totalBufferSize++;
 
 //			// Key already exists
 //			if (loc >= 0) {
@@ -254,35 +232,16 @@ public class BPlusTree {
 			FileOutputStream fout;
 			try {
 				temp = File.createTempFile("Temp", ".csv", new File(RAIterator.TEMP_DIR));
-				fout = new FileOutputStream(temp);
-				ObjectOutputStream oos = new ObjectOutputStream(fout);
-
-				if (fileName != null) {
-					FileInputStream fis = new FileInputStream(RAIterator.TEMP_DIR + fileName);
-					ObjectInputStream ois = new ObjectInputStream(fis);
-
-					try {
-						while (true) {
-							oos.writeObject((ArrayList<PrimitiveValue>) ois.readObject());
-							oos.reset();
-						}
-
-					} catch (ClassNotFoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (EOFException eof) {
-						ois.close();
-					}
-				}
+				BufferedWriter bw = new BufferedWriter(new FileWriter(temp));
 
 				for (ArrayList<PrimitiveValue> row: rows) {
-					oos.writeObject(row);
-					oos.reset();
+					bw.write(utils.getOutputString(row));
+					bw.write("\n");
 				}
 				
 				rows.clear();
 				
-				oos.close();
+				bw.close();
 
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -610,3 +569,4 @@ public class BPlusTree {
 		}
 	}
 }
+

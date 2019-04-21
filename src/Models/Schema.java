@@ -1,6 +1,12 @@
 package Models;
 
-public class Schema {
+import java.io.Serializable;
+
+public class Schema implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private Integer columnIndex;
 	private String dataType;
 	private String columnName;

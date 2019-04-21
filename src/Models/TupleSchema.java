@@ -1,12 +1,17 @@
 package Models;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TupleSchema {
+public class TupleSchema implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private Map<String, Schema> schemaByColumnName = new HashMap<String, Schema>();
 	private Map<Integer, Schema> schemaByColumnIndex = new HashMap<Integer, Schema>();
 	

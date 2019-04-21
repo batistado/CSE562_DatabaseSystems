@@ -15,6 +15,7 @@ public class Min implements Aggregate {
 	private PrimitiveType type;
 	private Integer index;
 	private Expression expression;
+	private String stringType;
 
 	public Min(String type, Integer index, Expression expression) {
 		if (type.equals("int")) {
@@ -31,6 +32,7 @@ public class Min implements Aggregate {
 		
 		this.index = index;
 		this.expression = expression;
+		this.stringType = type;
 	}
 
 	public void setType(PrimitiveValue val) {
@@ -86,6 +88,12 @@ public class Min implements Aggregate {
 		}
 		
 		this.addValue(newValue);
+	}
+	
+	@Override
+	public String getDataType() {
+		// TODO Auto-generated method stub
+		return stringType;
 	}
 }
 

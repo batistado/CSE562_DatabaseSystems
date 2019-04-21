@@ -12,6 +12,7 @@ public class Sum implements Aggregate {
 	private PrimitiveType type;
 	private Integer index;
 	private Expression expression;
+	private String stringType;
 
 	public Sum(String type, Integer index, Expression expression) {
 		if (type.equals("int")) {
@@ -22,6 +23,7 @@ public class Sum implements Aggregate {
 			this.type = PrimitiveType.DOUBLE;
 		}
 		
+		this.stringType = type;
 		this.index = index;
 		this.expression = expression;
 	}
@@ -73,5 +75,11 @@ public class Sum implements Aggregate {
 		}
 		
 		this.addValue(newValue);
+	}
+	
+	@Override
+	public String getDataType() {
+		// TODO Auto-generated method stub
+		return stringType;
 	}
 }

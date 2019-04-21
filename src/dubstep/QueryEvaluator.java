@@ -2,12 +2,18 @@ package dubstep;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
+import Indexes.PrimaryIndex;
+import Indexes.Indexer;
+import Indexes.TreeSearch;
 import Iterators.AggregationIterator;
 import Iterators.CrossProductIterator;
 import Iterators.FromIterator;
 import Iterators.GroupByIterator;
+import Iterators.InMemoryGroupByIterator;
+import Iterators.IndexIterator;
 import Iterators.LimitIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
@@ -16,6 +22,7 @@ import Iterators.SortIterator;
 import Iterators.SubQueryIterator;
 import Iterators.UnionIterator;
 import Utils.Optimizer;
+import Utils.utils;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.schema.Column;
@@ -58,7 +65,11 @@ public class QueryEvaluator {
 		List<Column> groupByColumns = plainSelect.getGroupByColumnReferences();
 		
 		if (groupByColumns != null && !groupByColumns.isEmpty()) {
-			RAIterator aggIterator = new AggregationIterator(new GroupByIterator(new Optimizer().optimizeRA(iterator), groupByColumns), plainSelect.getSelectItems());
+			RAIterator aggIterator = null;
+			if (!Main.isInMemory)
+				aggIterator = new AggregationIterator(new GroupByIterator(new Optimizer().optimizeRA(iterator), groupByColumns), plainSelect.getSelectItems());
+			else
+				aggIterator = new InMemoryGroupByIterator(new Optimizer().optimizeRA(iterator), plainSelect.getSelectItems());
 			//RAIterator aggIterator = new AggregationIterator(new GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
 			
 			return plainSelect.getHaving() == null ? aggIterator : new SelectIterator(aggIterator, plainSelect.getHaving());
@@ -163,7 +174,33 @@ public class QueryEvaluator {
 	public RAIterator evaluateFromTable(Table fromTable, Expression where) {
 		FromIterator fromIterator = new FromIterator(fromTable);
 		
-		return where == null ? fromIterator : new SelectIterator(fromIterator, where);
+		if (where == null)
+			return fromIterator;
+		
+		String colName = utils.getOneSideColumnName(where);
+		
+		if (Indexer.indexMapping.containsKey(colName)) {
+			HashSet<String> fileNames = new HashSet<String>();
+			
+			PrimaryIndex tree = Indexer.indexMapping.get(colName);
+			
+			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
+			
+			if (treeSearchObjects == null)
+				return new SelectIterator(fromIterator, where);
+			
+			for (TreeSearch treeSearchObject: treeSearchObjects) {
+				if (treeSearchObject.operation.equals("EQUALS")) {
+					fileNames.add(tree.search(treeSearchObject.leftValue));
+				} else {
+					fileNames.addAll(tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy));
+				}
+			}
+			
+			return new IndexIterator(fromTable, new ArrayList<String>(fileNames), where);
+		}
+		
+		return new SelectIterator(fromIterator, where);
 	}
 	
 	public RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter) {

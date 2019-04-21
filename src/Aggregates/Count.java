@@ -40,5 +40,11 @@ public class Count implements Aggregate {
 		
 		this.addValue(newValue);
 	}
+
+	@Override
+	public String getDataType() {
+		// TODO Auto-generated method stub
+		return "int";
+	}
 }
 

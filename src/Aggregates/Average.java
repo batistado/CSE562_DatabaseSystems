@@ -13,6 +13,7 @@ public class Average implements Aggregate {
 	private PrimitiveType type;
 	private Integer index;
 	private Expression expression;
+	private String stringType;
 
 	public Average(String type, Integer index, Expression expression) {
 		if (type.equals("int")) {
@@ -23,6 +24,7 @@ public class Average implements Aggregate {
 			this.type = PrimitiveType.DOUBLE;
 		}
 
+		this.stringType = type;
 		this.count = (float) 0.0;
 		this.index = index;
 		this.expression = expression;
@@ -83,5 +85,11 @@ public class Average implements Aggregate {
 		this.count = (float) 0.0;
 		
 		this.addValue(newValue);
+	}
+
+	@Override
+	public String getDataType() {
+		// TODO Auto-generated method stub
+		return stringType;
 	}
 }

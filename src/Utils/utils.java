@@ -4,10 +4,13 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
+import Indexes.PrimaryIndex;
+import Indexes.TreeSearch;
 import Models.TupleSchema;
 import dubstep.Main;
 import net.sf.jsqlparser.eval.Eval;
@@ -21,6 +24,12 @@ import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.PrimitiveValue.InvalidPrimitive;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
+import net.sf.jsqlparser.expression.operators.relational.MinorThan;
+import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.schema.Table;
@@ -28,6 +37,14 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 public class utils {
+	public static Comparator<PrimitiveValue> c = new Comparator<PrimitiveValue>() {
+		@Override
+		public int compare(PrimitiveValue o1, PrimitiveValue o2) {
+			// TODO Auto-generated method stub
+			return primitiveValueComparator(o1, o2);
+		}
+	};
+	
 	public static int sortComparator(ArrayList<PrimitiveValue> a, ArrayList<PrimitiveValue> b, List<OrderByElement> orderByElements, TupleSchema fromSchema) {
 		// TODO Auto-generated method stub
 			int c = 0;
@@ -138,7 +155,6 @@ public class utils {
 			} else {
 				return pa.toString().equals(pb.toString());
 			}
-			
 			return false;
 		} catch (InvalidPrimitive i) {
 			i.printStackTrace();
@@ -307,6 +323,197 @@ public class utils {
 		return name;
 	}
 	
+	public static String getOneSideColumnName(Expression e) {
+		if (e instanceof Column) {
+			return ((Column) e).getWholeColumnName();
+		}
+		
+		if (e instanceof PrimitiveValue) {
+			return null;
+		}
+		
+		BinaryExpression be = (BinaryExpression) e;
+		String leftColumnName = getOneSideColumnName(be.getLeftExpression());
+		
+		if (leftColumnName != null) {
+			return leftColumnName;
+		}
+		
+		return getOneSideColumnName(be.getRightExpression());
+	}
+	
+	public static List<Expression> splitAndClauses(Expression e) {
+		List<Expression> splitExpressions = new ArrayList<Expression>();
+
+		if (e instanceof AndExpression) {
+			AndExpression a = (AndExpression) e;
+			splitExpressions.addAll(splitAndClauses(a.getLeftExpression()));
+			splitExpressions.addAll(splitAndClauses(a.getRightExpression()));
+		} else {
+			splitExpressions.add(e);
+		}
+
+		return splitExpressions;
+	}
+	
+	public static List<Expression> getIndexExpression(Expression e) {
+		List<Expression> splitExpression = splitAndClauses(e);
+		
+		Expression firstExpression = splitExpression.get(0);
+		Column commonColumn = validateAndGetSingleColumnExpression(firstExpression);
+		
+		if (commonColumn == null)
+			return null;
+		
+		for (int i = 1; i < splitExpression.size(); i++) {
+			Column column = validateAndGetSingleColumnExpression(splitExpression.get(i));
+			
+			if (column == null || !column.getWholeColumnName().equals(commonColumn.getWholeColumnName())) {
+				return null;
+			}
+		}
+		
+		return splitExpression;
+	}
+	
+	public static Column validateAndGetSingleColumnExpression(Expression e) {
+		if (e instanceof BinaryExpression) {
+			Expression leftExpression = ((BinaryExpression) e).getLeftExpression();
+			Expression rightExpression = ((BinaryExpression) e).getRightExpression();
+			
+			if (leftExpression instanceof Column && rightExpression instanceof PrimitiveValue) {
+				return (Column) leftExpression;
+			} else if (rightExpression instanceof Column && leftExpression instanceof PrimitiveValue) {
+				return (Column) rightExpression;
+			}
+		}
+		
+		return null;
+	}
+	
+	public static Expression getSingleColumnExpression(Expression e, TupleSchema ts) {
+		BinaryExpression be = (BinaryExpression) e;
+		
+		Column leftColumn = (Column) be.getLeftExpression();
+		
+		if (ts.containsKey(leftColumn.getWholeColumnName()))
+			return be.getLeftExpression();
+		
+		return be.getRightExpression();
+	}
+	
+	public static List<TreeSearch> getSearchObject(Expression e) {
+		List<Expression> indexExpression = getIndexExpression(e);
+		
+		if (indexExpression == null)
+			return null;
+		
+		List<TreeSearch> searchObjects = new ArrayList<TreeSearch>();
+		TreeSearch rangeExpression = null;
+		
+		for(Expression exp: indexExpression) {
+			if (exp instanceof EqualsTo) {
+				TreeSearch ts = new TreeSearch();
+				ts.addEqualsToOperator(getValueFromExpression(exp));
+				searchObjects.add(ts);
+			} else {
+				if (rangeExpression == null) {
+					rangeExpression = new TreeSearch();
+				}
+				
+				if (exp instanceof GreaterThan) {
+					GreaterThan gt = (GreaterThan) exp;
+					
+					if (gt.getLeftExpression() instanceof PrimitiveValue && gt.getRightExpression() instanceof Column) {
+						if (!rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE);
+						}
+					} else {
+						// Other way round
+						
+						if (!rangeExpression.addRangeOperator((PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator((PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE);
+						}
+					}
+				} else if (exp instanceof GreaterThanEquals) {
+					GreaterThanEquals gt = (GreaterThanEquals) exp;
+					
+					if (gt.getLeftExpression() instanceof PrimitiveValue && gt.getRightExpression() instanceof Column) {
+						if (!rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.INCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.INCLUSIVE);
+						}
+					} else {
+						// Other way round
+						
+						if (!rangeExpression.addRangeOperator((PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.INCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator((PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.INCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE);
+						}
+					}
+				} else if (exp instanceof MinorThan) {
+					MinorThan gt = (MinorThan) exp;
+					
+					if (gt.getLeftExpression() instanceof PrimitiveValue && gt.getRightExpression() instanceof Column) {
+						if (!rangeExpression.addRangeOperator((PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator((PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE);
+						}
+					} else {
+						// Other way round
+						
+						if (!rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.EXCLUSIVE);
+						}
+					}
+				} else if (exp instanceof MinorThanEquals) {
+					MinorThanEquals gt = (MinorThanEquals) exp;
+					
+					if (gt.getLeftExpression() instanceof PrimitiveValue && gt.getRightExpression() instanceof Column) {
+						if (!rangeExpression.addRangeOperator((PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.INCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator((PrimitiveValue) gt.getLeftExpression(), PrimaryIndex.RangePolicy.INCLUSIVE, null, PrimaryIndex.RangePolicy.INCLUSIVE);
+						}
+					} else {
+						// Other way round
+						
+						if (!rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.INCLUSIVE)) {
+							searchObjects.add(rangeExpression);
+							rangeExpression = new TreeSearch();
+							rangeExpression.addRangeOperator(null, PrimaryIndex.RangePolicy.INCLUSIVE, (PrimitiveValue) gt.getRightExpression(), PrimaryIndex.RangePolicy.INCLUSIVE);
+						}
+					}
+				}
+				
+			}
+		}
+		
+		if (rangeExpression != null)
+			searchObjects.add(rangeExpression);
+		
+		return searchObjects;
+	}
+	
+	public static PrimitiveValue getValueFromExpression(Expression e) {
+		BinaryExpression be = (BinaryExpression) e;
+		
+		if (be.getLeftExpression() instanceof PrimitiveValue) {
+			return (PrimitiveValue) be.getLeftExpression();
+		}
+		
+		return (PrimitiveValue) be.getRightExpression(); 
+	}
+	
 	public static Integer tsToSec8601(String timestamp){
 	  if(timestamp == null) return null;
 	  
@@ -347,6 +554,16 @@ public class utils {
 			return null;
 		}
 		
+	}
+	
+	public static Expression swapLeftRightExpression(Expression e) {
+		BinaryExpression be = (BinaryExpression) e;
+		Expression tmp = be.getLeftExpression();
+		
+		be.setLeftExpression(be.getRightExpression());
+		be.setRightExpression(tmp);
+		
+		return be;
 	}
 	
 	public static Boolean boolEval(PrimitiveValue value, Expression expression){

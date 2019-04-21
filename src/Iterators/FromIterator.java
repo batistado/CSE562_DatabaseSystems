@@ -30,6 +30,10 @@ public class FromIterator implements RAIterator{
 		//System.gc();
 	}
 	
+	public Table getTable() {
+		return table;
+	}
+	
 	@Override
 	public void resetWhere() {
 		
