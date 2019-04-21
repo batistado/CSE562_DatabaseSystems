@@ -57,11 +57,11 @@ public class SecondaryTree {
 	private List<Column> indexOnElements;
 	private List<OrderByElement> orderByElements;
 
-	public SecondaryTree(Table table, List<Column> indexOnElements, boolean isSorted) {
-		this(DEFAULT_BRANCHING_FACTOR, table, indexOnElements, isSorted);
+	public SecondaryTree(Table table, List<Column> indexOnElements) {
+		this(DEFAULT_BRANCHING_FACTOR, table, indexOnElements);
 	}
 
-	public SecondaryTree(int branchingFactor, Table table, List<Column> indexOnElements, boolean isSorted) {
+	public SecondaryTree(int branchingFactor, Table table, List<Column> indexOnElements) {
 		if (branchingFactor <= 2)
 			throw new IllegalArgumentException("Illegal branching factor: " + branchingFactor);
 		this.branchingFactor = branchingFactor;

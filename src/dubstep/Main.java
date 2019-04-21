@@ -30,7 +30,7 @@ import net.sf.jsqlparser.statement.select.Select;
 public class Main {
 	public static Map<String, TupleSchema> tableSchemas = new HashMap<>();
 	public static boolean isInMemory;
-	public static int sortedRunSize = 10;
+	public static int sortedRunSize = 2;
 	public static int sortBufferSize = 100000;
 	
 	
