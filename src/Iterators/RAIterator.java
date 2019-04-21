@@ -16,7 +16,7 @@ public interface RAIterator extends Iterator<ArrayList<PrimitiveValue>>  {
 	public final String DIR = "data/";
 	
 	//public final String TEMP_DIR = "team8_temp/";
-	public final String TEMP_DIR = DIR + "team8_temp/";
+	public final String TEMP_DIR = "team8_temp/";
 	
 	public void resetWhere();
 	
