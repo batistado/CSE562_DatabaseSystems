@@ -387,7 +387,7 @@ public class Optimizer {
 												&& iterator.getIteratorSchema()
 												.containsKey(utils.getColumnName((Column) binaryExpression.getRightExpression()))
 												&& iterator.getIteratorSchema()
-														.containsKey(utils.getColumnName((Column) binaryExpression.getLeftExpression()))))) {
+														.containsKey(utils.getColumnName((Column) binaryExpression.getLeftExpression())))) || recursiveCheckForIteratorSpecificCondition(e, iterator)) {
 					expressions.remove(e);
 					tmp.add(binaryExpression);
 				}
@@ -395,5 +395,34 @@ public class Optimizer {
 		}
 
 		return mergeAndClauses(tmp);
+	}
+	
+	public boolean recursiveCheckForIteratorSpecificCondition(Expression e, RAIterator iterator) {
+		if (e == null)
+			return false;
+		
+		if (!(e instanceof BinaryExpression))
+			return false;
+		
+		BinaryExpression binaryExpression = (BinaryExpression) e;
+		
+		if ((binaryExpression.getLeftExpression() instanceof Column
+				&& !(binaryExpression.getRightExpression() instanceof Column)
+				&& iterator.getIteratorSchema()
+						.containsKey(utils.getColumnName((Column) binaryExpression.getLeftExpression())))
+				|| (binaryExpression.getRightExpression() instanceof Column
+						&& !(binaryExpression.getLeftExpression() instanceof Column)
+						&& iterator.getIteratorSchema().containsKey(
+								utils.getColumnName((Column) binaryExpression.getRightExpression()))) || ((binaryExpression.getLeftExpression() instanceof Column
+										&& (binaryExpression.getRightExpression() instanceof Column)
+										&& iterator.getIteratorSchema()
+										.containsKey(utils.getColumnName((Column) binaryExpression.getRightExpression()))
+										&& iterator.getIteratorSchema()
+												.containsKey(utils.getColumnName((Column) binaryExpression.getLeftExpression()))))) {
+			return true;
+		}
+		
+		return recursiveCheckForIteratorSpecificCondition(binaryExpression.getLeftExpression(), iterator) && recursiveCheckForIteratorSpecificCondition(binaryExpression.getRightExpression(), iterator);
+		
 	}
 }
