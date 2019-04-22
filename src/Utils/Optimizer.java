@@ -211,7 +211,7 @@ public class Optimizer {
 					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
 
 					if (treeSearchObjects == null) {
-						//expressionList.add(selectExpression);
+//						expressionList.add(selectExpression);
 						leftIterator = new SelectIterator(leftIterator, selectExpression);
 					} else {
 						for (TreeSearch treeSearchObject : treeSearchObjects) {
@@ -228,11 +228,11 @@ public class Optimizer {
 								new ArrayList<String>(fileNames), selectExpression);
 					}
 				} else {
-					//expressionList.add(selectExpression);
+//					expressionList.add(selectExpression);
 					leftIterator = new SelectIterator(leftIterator, selectExpression);
 				}
 			} else {
-				//expressionList.add(selectExpression);
+//				expressionList.add(selectExpression);
 				leftIterator = new SelectIterator(leftIterator, selectExpression);
 			}
 		}
@@ -246,7 +246,7 @@ public class Optimizer {
 			if (anyJoinCondition != null) {
 				Column col = (Column) ((BinaryExpression) anyJoinCondition).getLeftExpression();
 				if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(col.getWholeColumnName())) {
-					return new BlockNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
+					return new LeftIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
 							Indexer.indexMapping.get(col.getWholeColumnName()), anyJoinCondition);
 				}
 				else if (anyJoinCondition instanceof EqualsTo) {
@@ -256,7 +256,7 @@ public class Optimizer {
 						leftIterator = new SelectIterator(leftIterator, selectExpression);
 					}
 					
-					return new SortMergeJoinIterator(leftIterator, rightIterator, anyJoinCondition);
+					return new OnDiskSMJIterator(leftIterator, rightIterator, anyJoinCondition);
 				} 
 				else {
 					expressionList.add(anyJoinCondition);
@@ -299,7 +299,7 @@ public class Optimizer {
 								new ArrayList<String>(fileNames), selectExpression);
 					}
 				} else {
-	//				expressionList.add(selectExpression);
+//					expressionList.add(selectExpression);
 					rightIterator = new SelectIterator(rightIterator, selectExpression);
 				}
 			} else {
@@ -314,16 +314,7 @@ public class Optimizer {
 			Column leftColumn = (Column) ((BinaryExpression) anyJoinCondition).getLeftExpression();
 			Column rightColumn = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
 			
-			if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
-				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
-				
-				if (selectExpression != null) {
-					rightIterator = new SelectIterator(rightIterator, selectExpression);
-				}
-				
-				return new BlockNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
-						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), anyJoinCondition);
-			} else if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
+			if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
 				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
 				
 				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
@@ -332,8 +323,18 @@ public class Optimizer {
 					leftIterator = new SelectIterator(leftIterator, selectExpression);
 				}
 				
-				return new BlockNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), swappedExpression, true);
+				return new RightIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
+						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), swappedExpression);
+			}
+			else if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
+				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
+				
+				if (selectExpression != null) {
+					rightIterator = new SelectIterator(rightIterator, selectExpression);
+				}
+				
+				return new LeftIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
+						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), anyJoinCondition);
 			}
 			else if (anyJoinCondition instanceof EqualsTo) {
 				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
@@ -348,7 +349,7 @@ public class Optimizer {
 					rightIterator = new SelectIterator(rightIterator, selectExpression);
 				}
 				
-				return new SortMergeJoinIterator(leftIterator, rightIterator, anyJoinCondition);
+				return new OnDiskSMJIterator(leftIterator, rightIterator, anyJoinCondition);
 			} 
 			else {
 				expressionList.add(anyJoinCondition);

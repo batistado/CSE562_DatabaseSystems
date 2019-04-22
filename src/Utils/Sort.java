@@ -87,8 +87,8 @@ public class Sort {
 	}
 
 	public String sortData(RAIterator rightIterator, List<OrderByElement> orderByElements, TupleSchema fromSchema,
-			String directory, ArrayList<ArrayList<PrimitiveValue>> buffer) {
-		if (Main.isInMemory) {
+			String directory, ArrayList<ArrayList<PrimitiveValue>> buffer, boolean isInMemory) {
+		if (isInMemory) {
 			while (rightIterator.hasNext()) {
 				buffer.add(rightIterator.next());
 			}

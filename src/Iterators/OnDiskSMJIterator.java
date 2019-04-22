@@ -22,7 +22,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
-public class SortMergeJoinIterator implements RAIterator {
+public class OnDiskSMJIterator implements RAIterator {
 	private RAIterator leftIterator = null;
 	private RAIterator rightIterator = null;
 	private ArrayList<PrimitiveValue> row;
@@ -38,11 +38,9 @@ public class SortMergeJoinIterator implements RAIterator {
 	private BufferedReader rightReader;
 	private ArrayList<PrimitiveValue> leftRow;
 	private ArrayList<PrimitiveValue> rightRow;
-	private Integer leftBufferIndex;
-	private Integer rightBufferIndex;
 	private boolean hasMatch;
 
-	public SortMergeJoinIterator(RAIterator leftIterator, RAIterator rightIterator, Expression joinCondition) {
+	public OnDiskSMJIterator(RAIterator leftIterator, RAIterator rightIterator, Expression joinCondition) {
 		this.leftBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
 		this.rightBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
 		this.buffer = new LinkedList<ArrayList<PrimitiveValue>>();
@@ -53,7 +51,7 @@ public class SortMergeJoinIterator implements RAIterator {
 		this.setIteratorSchema();
 		this.initializeIterator();
 		this.initializeReader();
-		//System.gc();
+		// System.gc();
 	}
 
 	private void initializeReader() {
@@ -62,13 +60,8 @@ public class SortMergeJoinIterator implements RAIterator {
 			row = new ArrayList<PrimitiveValue>();
 			leftRow = new ArrayList<PrimitiveValue>();
 			rightRow = new ArrayList<PrimitiveValue>();
-			if (Main.isInMemory) {
-				leftBufferIndex = -1;
-				rightBufferIndex = -1;
-			} else {
-				leftReader = new BufferedReader(new FileReader(leftFileName));
-				rightReader = new BufferedReader(new FileReader(rightFileName));
-			}
+			leftReader = new BufferedReader(new FileReader(leftFileName));
+			rightReader = new BufferedReader(new FileReader(rightFileName));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			System.out.println("File names not found " + leftFileName + " " + rightFileName);
@@ -89,24 +82,19 @@ public class SortMergeJoinIterator implements RAIterator {
 		List<OrderByElement> orderByElements = new ArrayList<OrderByElement>();
 		orderByElements.add(order);
 		leftFileName = sort(leftIterator, orderByElements, leftBuffer);
-		
-		if (!Main.isInMemory) {
-			leftBuffer.clear();
-		}
+		leftBuffer.clear();
 
 		order.setExpression((Column) equalsToExpression.getRightExpression());
 		order.setAsc(true);
 		orderByElements.clear();
 		orderByElements.add(order);
 		rightFileName = sort(rightIterator, orderByElements, rightBuffer);
-		
-		if (!Main.isInMemory) {
-			rightBuffer.clear();
-		}
+		rightBuffer.clear();
 	}
-	
-	public String sort(RAIterator iterator, List<OrderByElement> orderByElements, ArrayList<ArrayList<PrimitiveValue>> buffer) {
-		return new Sort().sortData(iterator, orderByElements, iterator.getIteratorSchema(), DIR, buffer);
+
+	public String sort(RAIterator iterator, List<OrderByElement> orderByElements,
+			ArrayList<ArrayList<PrimitiveValue>> buffer) {
+		return new Sort().sortData(iterator, orderByElements, iterator.getIteratorSchema(), DIR, buffer, false);
 	}
 
 	@Override
@@ -125,7 +113,7 @@ public class SortMergeJoinIterator implements RAIterator {
 		// TODO Auto-generated method stub
 		if (line == null)
 			return null;
-		
+
 		TupleSchema schema = null;
 
 		if (isLeftLine) {
@@ -157,73 +145,40 @@ public class SortMergeJoinIterator implements RAIterator {
 
 		return tmp;
 	}
-	
+
 	public void fillBuffer() throws IOException {
-		if (Main.isInMemory) {
-			ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
-			
-			PrimitiveValue joinValue = utils.projectColumnValue(leftBuffer.get(leftBufferIndex), ((EqualsTo) joinCondition).getLeftExpression(), fromSchema);
-			
-			int rightIndex = rightBufferIndex, maxRight = rightBufferIndex;
-			while (leftBufferIndex < leftBuffer.size() && utils.areEqual(joinValue, utils.projectColumnValue(leftBuffer.get(leftBufferIndex), ((EqualsTo) joinCondition).getLeftExpression(), fromSchema))) {
-				rightBufferIndex = rightIndex;
-				while (rightBufferIndex < rightBuffer.size()) {
-					
-					tmp = new ArrayList<PrimitiveValue>();
-					tmp.addAll(leftBuffer.get(leftBufferIndex));
-					tmp.addAll(rightBuffer.get(rightBufferIndex));
-					if (utils.filterRow(tmp, joinCondition, fromSchema)) {
-						buffer.add(tmp);
-					} else {
-						break;
-					}
-					
-				
-					rightBufferIndex++;
-					if (maxRight < rightBufferIndex) {
-						maxRight = rightBufferIndex;
-					}
-				}
-				leftBufferIndex++;
-			}
-			
-			leftBufferIndex--;
-			rightBufferIndex = maxRight-1;
-			
-			return;
-		}
-		
-		
 		// on-disk
-		
+
 		leftBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
 		rightBuffer = new ArrayList<ArrayList<PrimitiveValue>>();
 		leftBuffer.add(leftRow);
 		rightBuffer.add(rightRow);
-		
-		PrimitiveValue joinValue = utils.projectColumnValue(row, ((EqualsTo) joinCondition).getLeftExpression(), fromSchema);
+
+		PrimitiveValue joinValue = utils.projectColumnValue(row, ((EqualsTo) joinCondition).getLeftExpression(),
+				fromSchema);
 		// fill up left buffer:
-		
-		Column column =(Column) ((EqualsTo) joinCondition).getLeftExpression();
-		while(leftReader != null && (leftRow = getRow(true, leftReader.readLine())) != null) {
-			if (!utils.areEqual(joinValue, leftRow.get(leftIterator.getIteratorSchema().getSchemaByName(utils.getColumnName(column)).getColumnIndex()))) {
+
+		Column column = (Column) ((EqualsTo) joinCondition).getLeftExpression();
+		while (leftReader != null && (leftRow = getRow(true, leftReader.readLine())) != null) {
+			if (!utils.areEqual(joinValue, leftRow.get(
+					leftIterator.getIteratorSchema().getSchemaByName(utils.getColumnName(column)).getColumnIndex()))) {
 				break;
 			}
-			
+
 			leftBuffer.add(leftRow);
 		}
-		
-		column =(Column) ((EqualsTo) joinCondition).getRightExpression();
-		while(rightReader != null && (rightRow = getRow(false, rightReader.readLine())) != null) {
-			if (!utils.areEqual(joinValue, rightRow.get(rightIterator.getIteratorSchema().getSchemaByName(utils.getColumnName(column)).getColumnIndex()))) {
+
+		column = (Column) ((EqualsTo) joinCondition).getRightExpression();
+		while (rightReader != null && (rightRow = getRow(false, rightReader.readLine())) != null) {
+			if (!utils.areEqual(joinValue, rightRow.get(
+					rightIterator.getIteratorSchema().getSchemaByName(utils.getColumnName(column)).getColumnIndex()))) {
 				break;
 			}
-			
+
 			rightBuffer.add(rightRow);
 		}
-		
-		
-		//Cross product
+
+		// Cross product
 		ArrayList<PrimitiveValue> tmp;
 		int leftIndex = 0;
 		while (leftIndex < leftBuffer.size()) {
@@ -232,7 +187,7 @@ public class SortMergeJoinIterator implements RAIterator {
 				tmp = new ArrayList<PrimitiveValue>();
 				tmp.addAll(leftBuffer.get(leftIndex));
 				tmp.addAll(rightBuffer.get(rightIndex));
-				
+
 				buffer.add(tmp);
 				rightIndex++;
 			}
@@ -242,67 +197,18 @@ public class SortMergeJoinIterator implements RAIterator {
 
 	@Override
 	public boolean hasNext() {
-		// TODO Auto-generated method stub
 		try {
-			if (Main.isInMemory) {
-				if (!buffer.isEmpty()) {
-					row = buffer.pollFirst();
-					return true;
-				}
-				
-				
-				if (++leftBufferIndex >= leftBuffer.size() || ++rightBufferIndex >= rightBuffer.size()) {
-					row = null;
-					return false;
-				}
-				
-				
-				while(leftBufferIndex < leftBuffer.size() && rightBufferIndex < rightBuffer.size()) {
-					row = new ArrayList<PrimitiveValue>();
-
-					row.addAll(leftBuffer.get(leftBufferIndex));
-					row.addAll(rightBuffer.get(rightBufferIndex));
-					
-					if (utils.filterRow(row, joinCondition, fromSchema)) {
-						fillBuffer();
-						//row.clear();
-						row = buffer.pollFirst();
-						return true;
-					}
-					
-					EqualsTo equalsToExpression = (EqualsTo) joinCondition;
-					Expression e = new GreaterThan(equalsToExpression.getLeftExpression(),
-							equalsToExpression.getRightExpression());
-
-					if (utils.filterRow(row, e, fromSchema)) {
-						if (++rightBufferIndex >= rightBuffer.size()) {
-							row = null;
-							return false;
-						}
-					} else {
-						if (++leftBufferIndex >= leftBuffer.size()) {
-							row = null;
-							return false;
-						}
-					}
-				}
-				
-				return false;
-			}
-			
-			
 			// On-disk
 			if (!buffer.isEmpty()) {
 				row = buffer.pollFirst();
 				return true;
 			}
-			
-			
+
 			if (hasMatch) {
 				if (leftRow == null || rightRow == null) {
 					leftRow = null;
 					rightRow = null;
-					
+
 					if (leftReader != null) {
 						leftReader.close();
 						leftReader = null;
@@ -317,7 +223,8 @@ public class SortMergeJoinIterator implements RAIterator {
 					return false;
 				}
 				hasMatch = false;
-			} else if (leftReader == null || rightReader == null || (leftRow = getRow(true, leftReader.readLine())) == null
+			} else if (leftReader == null || rightReader == null
+					|| (leftRow = getRow(true, leftReader.readLine())) == null
 					|| (rightRow = getRow(false, rightReader.readLine())) == null) {
 				if (leftReader != null) {
 					leftReader.close();
@@ -333,7 +240,6 @@ public class SortMergeJoinIterator implements RAIterator {
 				return false;
 			}
 
-			
 			while (leftRow != null && rightRow != null) {
 				row = new ArrayList<PrimitiveValue>();
 

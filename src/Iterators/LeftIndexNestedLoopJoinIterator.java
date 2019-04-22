@@ -25,7 +25,7 @@ import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
-public class BlockNestedLoopJoinIterator implements RAIterator {
+public class LeftIndexNestedLoopJoinIterator implements RAIterator {
 	private FromIterator leftIterator = null;
 	private RAIterator rightIterator = null;
 	private ArrayList<PrimitiveValue> leftRow;
@@ -38,22 +38,9 @@ public class BlockNestedLoopJoinIterator implements RAIterator {
 	private BufferedReader leftFileReader;
 	private Expression rightExpression;
 	private BinaryExpression joinOn;
-	private boolean isOpposite = false;
 
-	public BlockNestedLoopJoinIterator(FromIterator leftIterator, RAIterator rightIterator, PrimaryIndex tree,
+	public LeftIndexNestedLoopJoinIterator(FromIterator leftIterator, RAIterator rightIterator, PrimaryIndex tree,
 			Expression joinCondition) {
-		this.leftIterator = leftIterator;
-		this.rightIterator = rightIterator;
-		this.joinCondition = joinCondition;
-		this.tree = tree;
-		this.rightExpression = utils.getSingleColumnExpression(joinCondition, rightIterator.getIteratorSchema());
-		setIteratorSchema();
-		// System.gc();
-	}
-
-	public BlockNestedLoopJoinIterator(FromIterator leftIterator, RAIterator rightIterator, PrimaryIndex tree,
-			Expression joinCondition, boolean isOpposite) {
-		this.isOpposite = isOpposite;
 		this.leftIterator = leftIterator;
 		this.rightIterator = rightIterator;
 		this.joinCondition = joinCondition;
@@ -216,15 +203,8 @@ public class BlockNestedLoopJoinIterator implements RAIterator {
 	public ArrayList<PrimitiveValue> next() {
 		// TODO Auto-generated method stub
 		ArrayList<PrimitiveValue> mergedRow = new ArrayList<>();
-
-		if (isOpposite) {
-			mergedRow.addAll(rightRow);
-			mergedRow.addAll(leftRow);
-		} else {
-			mergedRow.addAll(leftRow);
-			mergedRow.addAll(rightRow);
-		}
-
+		mergedRow.addAll(leftRow);
+		mergedRow.addAll(rightRow);
 		return mergedRow;
 	}
 
@@ -238,13 +218,8 @@ public class BlockNestedLoopJoinIterator implements RAIterator {
 
 	public void setIteratorSchema() {
 		TupleSchema leftIteratorSchema, rightIteratorSchema;
-		if (isOpposite) {
-			rightIteratorSchema = leftIterator.getIteratorSchema();
-			leftIteratorSchema = rightIterator.getIteratorSchema();
-		} else {
-			leftIteratorSchema = leftIterator.getIteratorSchema();
-			rightIteratorSchema = rightIterator.getIteratorSchema();
-		}
+		leftIteratorSchema = leftIterator.getIteratorSchema();
+		rightIteratorSchema = rightIterator.getIteratorSchema();
 		
 		fromSchema = new TupleSchema();
 

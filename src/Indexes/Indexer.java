@@ -30,6 +30,18 @@ import net.sf.jsqlparser.statement.create.table.Index;
 
 public class Indexer {
 	public static Map<String, PrimaryIndex> indexMapping = new HashMap<>();
+	
+	public static int getBranchingFactor(String tableName) {
+		switch (tableName) {
+		case "LINEITEM": return 25000;
+		case "ORDERS": return 5000;
+		case "CUSTOMER": return 500;
+		case "PART": return 800;
+		case "SUPPLIER": return 100;
+		case "PARTSUPP": return 5000;
+		default: return 1000;
+		}
+	}
 
 	public static void addIndexes(CreateTable createTable) {
 		if (createTable.getIndexes() != null) {
@@ -40,7 +52,9 @@ public class Indexer {
 				}
 
 				if (tableIndex.getType().equals("PRIMARY KEY")) {
-					PrimaryIndex index = new PrimaryIndex(createTable.getTable(), indexOnColumns);
+					Table table = createTable.getTable();
+					
+					PrimaryIndex index = new PrimaryIndex(table, indexOnColumns, getBranchingFactor(table.getName()));
 					fillIndex(index, createTable.getTable());
 	
 					indexMapping.put(utils.getTableName(createTable.getTable()) + "." + tableIndex.getColumnsNames().get(0), index);

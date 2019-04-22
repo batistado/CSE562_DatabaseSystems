@@ -35,8 +35,8 @@ public class PrimaryIndex implements Serializable {
 	transient private List<Column> indexOnElements;
 	transient private List<OrderByElement> orderByElements;
 
-	public PrimaryIndex(Table table, List<Column> indexOnElements) {
-		this(50000, table, indexOnElements);
+	public PrimaryIndex(Table table, List<Column> indexOnElements, int branchingFactor) {
+		this(branchingFactor, table, indexOnElements);
 	}
 
 	public PrimaryIndex(int branchingFactor, Table table, List<Column> indexOnElements) {

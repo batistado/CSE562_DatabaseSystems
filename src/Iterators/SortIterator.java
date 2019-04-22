@@ -37,7 +37,7 @@ public class SortIterator implements RAIterator{
 	}
 	
 	public String sort(RAIterator rightIterator, List<OrderByElement> orderByElements) {
-		return new Sort().sortData(rightIterator, orderByElements, fromSchema, DIR, buffer);
+		return new Sort().sortData(rightIterator, orderByElements, fromSchema, DIR, buffer, Main.isInMemory);
 	}
 	
 	private void initializeReader() {
