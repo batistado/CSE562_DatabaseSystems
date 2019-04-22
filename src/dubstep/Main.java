@@ -84,7 +84,7 @@ public class Main {
 		}
 		
 		tableSchemas.put(table.getTable().getName(), ts);
-		Indexer.addIndexes(table);
+//		Indexer.addIndexes(table);
 		writeSchemaToDisk();
 	}
 	
@@ -106,11 +106,11 @@ public class Main {
 	public static RAIterator evaluateQuery(Select selectQuery) {
 		if (Main.tableSchemas.isEmpty()) {
 			try {
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Index.csv"));
-				Indexer.indexMapping = (Map<String, PrimaryIndex>) ois.readObject();
-				ois.close();
+//				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Index.csv"));
+//				Indexer.indexMapping = (Map<String, PrimaryIndex>) ois.readObject();
+//				ois.close();
 				
-				ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Schema.csv"));
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Schema.csv"));
 				tableSchemas = (Map<String, TupleSchema>) ois.readObject();
 				ois.close();
 			} catch (FileNotFoundException e) {

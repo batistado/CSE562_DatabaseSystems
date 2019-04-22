@@ -23,6 +23,8 @@ public class Optimizer {
 
 				return optimizeSelectionOverCross(crossProductIterator, selectIterator);
 			}
+			
+			
 
 			return new SelectIterator(optimizeRA(selectIterator.getRightIterator()), selectIterator.getExpression());
 		}
@@ -200,41 +202,43 @@ public class Optimizer {
 
 		if (selectExpression != null) {
 			// Check if it can use an index
-			if (leftIterator instanceof FromIterator) {
-				String colName = utils.getOneSideColumnName(selectExpression);
-
-				if (Indexer.indexMapping.containsKey(colName)) {
-					HashSet<String> fileNames = new HashSet<String>();
-
-					PrimaryIndex tree = Indexer.indexMapping.get(colName);
-
-					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
-
-					if (treeSearchObjects == null) {
-//						expressionList.add(selectExpression);
-						leftIterator = new SelectIterator(leftIterator, selectExpression);
-					} else {
-						for (TreeSearch treeSearchObject : treeSearchObjects) {
-							if (treeSearchObject.operation.equals("EQUALS")) {
-								fileNames.add(tree.search(treeSearchObject.leftValue));
-							} else {
-								fileNames.addAll(
-										tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
-												treeSearchObject.rightValue, treeSearchObject.rightPolicy));
-							}
-						}
-
-						leftIterator = new IndexIterator(((FromIterator) leftIterator).getTable(),
-								new ArrayList<String>(fileNames), selectExpression);
-					}
-				} else {
-//					expressionList.add(selectExpression);
-					leftIterator = new SelectIterator(leftIterator, selectExpression);
-				}
-			} else {
+//			if (leftIterator instanceof FromIterator) {
+//				String colName = utils.getOneSideColumnName(selectExpression);
+//
+//				if (Indexer.indexMapping.containsKey(colName)) {
+//					HashSet<String> fileNames = new HashSet<String>();
+//
+//					PrimaryIndex tree = Indexer.indexMapping.get(colName);
+//
+//					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
+//
+//					if (treeSearchObjects == null) {
+////						expressionList.add(selectExpression);
+//						leftIterator = new SelectIterator(leftIterator, selectExpression);
+//					} else {
+//						for (TreeSearch treeSearchObject : treeSearchObjects) {
+//							if (treeSearchObject.operation.equals("EQUALS")) {
+//								fileNames.add(tree.search(treeSearchObject.leftValue));
+//							} else {
+//								fileNames.addAll(
+//										tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
+//												treeSearchObject.rightValue, treeSearchObject.rightPolicy));
+//							}
+//						}
+//
+//						leftIterator = new IndexIterator(((FromIterator) leftIterator).getTable(),
+//								new ArrayList<String>(fileNames), selectExpression);
+//					}
+//				} else {
+////					expressionList.add(selectExpression);
+//					leftIterator = new SelectIterator(leftIterator, selectExpression);
+//				}
+//			} 
+//			else 
+//			{
 //				expressionList.add(selectExpression);
 				leftIterator = new SelectIterator(leftIterator, selectExpression);
-			}
+//			}
 		}
 
 		if (crossProductIterator.getRightIterator() instanceof CrossProductIterator) {
@@ -245,11 +249,12 @@ public class Optimizer {
 
 			if (anyJoinCondition != null) {
 				Column col = (Column) ((BinaryExpression) anyJoinCondition).getLeftExpression();
-				if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(col.getWholeColumnName())) {
-					return new LeftIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
-							Indexer.indexMapping.get(col.getWholeColumnName()), anyJoinCondition);
-				}
-				else if (anyJoinCondition instanceof EqualsTo) {
+//				if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(col.getWholeColumnName())) {
+//					return new LeftIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
+//							Indexer.indexMapping.get(col.getWholeColumnName()), anyJoinCondition);
+//				}
+				//else 
+					if (anyJoinCondition instanceof EqualsTo) {
 					selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
 					
 					if (selectExpression != null) {
@@ -271,41 +276,41 @@ public class Optimizer {
 
 		if (selectExpression != null) {
 			// Check if it can use an index
-			if (rightIterator instanceof FromIterator) {
-				String colName = utils.getOneSideColumnName(selectExpression);
-
-				if (Indexer.indexMapping.containsKey(colName)) {
-					HashSet<String> fileNames = new HashSet<String>();
-
-					PrimaryIndex tree = Indexer.indexMapping.get(colName);
-
-					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
-
-					if (treeSearchObjects == null) {
-//						expressionList.add(selectExpression);
-						rightIterator = new SelectIterator(rightIterator, selectExpression);
-					} else {
-						for (TreeSearch treeSearchObject : treeSearchObjects) {
-							if (treeSearchObject.operation.equals("EQUALS")) {
-								fileNames.add(tree.search(treeSearchObject.leftValue));
-							} else {
-								fileNames.addAll(
-										tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
-												treeSearchObject.rightValue, treeSearchObject.rightPolicy));
-							}
-						}
-
-						rightIterator = new IndexIterator(((FromIterator) rightIterator).getTable(),
-								new ArrayList<String>(fileNames), selectExpression);
-					}
-				} else {
-//					expressionList.add(selectExpression);
-					rightIterator = new SelectIterator(rightIterator, selectExpression);
-				}
-			} else {
+//			if (rightIterator instanceof FromIterator) {
+//				String colName = utils.getOneSideColumnName(selectExpression);
+//
+//				if (Indexer.indexMapping.containsKey(colName)) {
+//					HashSet<String> fileNames = new HashSet<String>();
+//
+//					PrimaryIndex tree = Indexer.indexMapping.get(colName);
+//
+//					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
+//
+//					if (treeSearchObjects == null) {
+////						expressionList.add(selectExpression);
+//						rightIterator = new SelectIterator(rightIterator, selectExpression);
+//					} else {
+//						for (TreeSearch treeSearchObject : treeSearchObjects) {
+//							if (treeSearchObject.operation.equals("EQUALS")) {
+//								fileNames.add(tree.search(treeSearchObject.leftValue));
+//							} else {
+//								fileNames.addAll(
+//										tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
+//												treeSearchObject.rightValue, treeSearchObject.rightPolicy));
+//							}
+//						}
+//
+//						rightIterator = new IndexIterator(((FromIterator) rightIterator).getTable(),
+//								new ArrayList<String>(fileNames), selectExpression);
+//					}
+//				} else {
+////					expressionList.add(selectExpression);
+//					rightIterator = new SelectIterator(rightIterator, selectExpression);
+//				}
+//			} else {
 //				expressionList.add(selectExpression);
 				rightIterator = new SelectIterator(rightIterator, selectExpression);
-			}
+//			}
 		}
 		
 		Expression anyJoinCondition = getJoinCondition(expressionList, leftIterator, rightIterator);
@@ -314,29 +319,30 @@ public class Optimizer {
 			Column leftColumn = (Column) ((BinaryExpression) anyJoinCondition).getLeftExpression();
 			Column rightColumn = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
 			
-			if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
-				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
-				
-				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
-				
-				if (selectExpression != null) {
-					leftIterator = new SelectIterator(leftIterator, selectExpression);
-				}
-				
-				return new RightIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), swappedExpression);
-			}
-			else if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
-				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
-				
-				if (selectExpression != null) {
-					rightIterator = new SelectIterator(rightIterator, selectExpression);
-				}
-				
-				return new LeftIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
-						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), anyJoinCondition);
-			}
-			else if (anyJoinCondition instanceof EqualsTo) {
+//			if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
+//				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+//				
+//				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
+//				
+//				if (selectExpression != null) {
+//					leftIterator = new SelectIterator(leftIterator, selectExpression);
+//				}
+//				
+//				return new RightIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
+//						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), swappedExpression);
+//			}
+//			else if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
+//				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
+//				
+//				if (selectExpression != null) {
+//					rightIterator = new SelectIterator(rightIterator, selectExpression);
+//				}
+//				
+//				return new LeftIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
+//						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), anyJoinCondition);
+//			}
+			//else
+				if (anyJoinCondition instanceof EqualsTo) {
 				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
 				
 				if (selectExpression != null) {

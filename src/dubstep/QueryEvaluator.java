@@ -179,26 +179,26 @@ public class QueryEvaluator {
 		
 		String colName = utils.getOneSideColumnName(where);
 		
-		if (Indexer.indexMapping.containsKey(colName)) {
-			HashSet<String> fileNames = new HashSet<String>();
-			
-			PrimaryIndex tree = Indexer.indexMapping.get(colName);
-			
-			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
-			
-			if (treeSearchObjects == null)
-				return new SelectIterator(fromIterator, where);
-			
-			for (TreeSearch treeSearchObject: treeSearchObjects) {
-				if (treeSearchObject.operation.equals("EQUALS")) {
-					fileNames.add(tree.search(treeSearchObject.leftValue));
-				} else {
-					fileNames.addAll(tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy));
-				}
-			}
-			
-			return new IndexIterator(fromTable, new ArrayList<String>(fileNames), where);
-		}
+//		if (Indexer.indexMapping.containsKey(colName)) {
+//			HashSet<String> fileNames = new HashSet<String>();
+//			
+//			PrimaryIndex tree = Indexer.indexMapping.get(colName);
+//			
+//			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
+//			
+//			if (treeSearchObjects == null)
+//				return new SelectIterator(fromIterator, where);
+//			
+//			for (TreeSearch treeSearchObject: treeSearchObjects) {
+//				if (treeSearchObject.operation.equals("EQUALS")) {
+//					fileNames.add(tree.search(treeSearchObject.leftValue));
+//				} else {
+//					fileNames.addAll(tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy));
+//				}
+//			}
+//			
+//			return new IndexIterator(fromTable, new ArrayList<String>(fileNames), where);
+//		}
 		
 		return new SelectIterator(fromIterator, where);
 	}
