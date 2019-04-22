@@ -256,7 +256,7 @@ public class Optimizer {
 						leftIterator = new SelectIterator(leftIterator, selectExpression);
 					}
 					
-					return new OnDiskSMJIterator(leftIterator, rightIterator, anyJoinCondition);
+					return new InMemorySMJIterator(leftIterator, rightIterator, anyJoinCondition);
 				} 
 				else {
 					expressionList.add(anyJoinCondition);
@@ -349,7 +349,7 @@ public class Optimizer {
 					rightIterator = new SelectIterator(rightIterator, selectExpression);
 				}
 				
-				return new OnDiskSMJIterator(leftIterator, rightIterator, anyJoinCondition);
+				return new InMemorySMJIterator(leftIterator, rightIterator, anyJoinCondition);
 			} 
 			else {
 				expressionList.add(anyJoinCondition);
