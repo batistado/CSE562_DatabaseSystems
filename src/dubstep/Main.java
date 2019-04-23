@@ -15,6 +15,7 @@ import java.util.Map;
 
 import Indexes.PrimaryIndex;
 import Indexes.Indexer;
+import Indexes.LinearPrimaryIndex;
 import Iterators.RAIterator;
 import Utils.*;
 import Models.TupleSchema;
@@ -32,6 +33,7 @@ public class Main {
 	public static boolean isInMemory;
 	public static int sortedRunSize = 2;
 	public static int sortBufferSize = 100000;
+	public static int offset = 2;
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
@@ -107,7 +109,7 @@ public class Main {
 		if (Main.tableSchemas.isEmpty()) {
 			try {
 				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Index.csv"));
-				Indexer.indexMapping = (Map<String, PrimaryIndex>) ois.readObject();
+				Indexer.indexMapping = (Map<String, LinearPrimaryIndex>) ois.readObject();
 				ois.close();
 				
 				ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Schema.csv"));

@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
@@ -22,6 +23,7 @@ import java.util.Map;
 import Iterators.FromIterator;
 import Iterators.RAIterator;
 import Utils.utils;
+import dubstep.Main;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -29,7 +31,7 @@ import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
 
 public class Indexer {
-	public static Map<String, PrimaryIndex> indexMapping = new HashMap<>();
+	public static Map<String, LinearPrimaryIndex> indexMapping = new HashMap<>();
 	
 	public static int getBranchingFactor(String tableName) {
 		switch (tableName) {
@@ -54,8 +56,9 @@ public class Indexer {
 				if (tableIndex.getType().equals("PRIMARY KEY")) {
 					Table table = createTable.getTable();
 					
-					PrimaryIndex index = new PrimaryIndex(table, indexOnColumns, getBranchingFactor(table.getName()));
-					fillIndex(index, createTable.getTable());
+					//PrimaryIndex index = new PrimaryIndex(table, indexOnColumns, getBranchingFactor(table.getName()));
+					LinearPrimaryIndex index = new LinearPrimaryIndex();
+					fillIndex(index, createTable.getTable(), indexOnColumns.get(0));
 	
 					indexMapping.put(utils.getTableName(createTable.getTable()) + "." + tableIndex.getColumnsNames().get(0), index);
 					indexMapping.put(tableIndex.getColumnsNames().get(0), index);
@@ -68,6 +71,7 @@ public class Indexer {
 			indexWriter.writeObject(indexMapping);
 			indexWriter.reset();
 			indexWriter.close();
+			System.gc();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -77,16 +81,18 @@ public class Indexer {
 		}
 	}
 
-	public static void fillIndex(PrimaryIndex index, Table table) {
+	public static void fillIndex(LinearPrimaryIndex index, Table table, Column col) {
 		try {
-			BufferedReader br = new BufferedReader(new FileReader(RAIterator.DIR + utils.getTableName(table) + ".csv"));
+			FileInputStream fis = new FileInputStream(RAIterator.DIR + utils.getTableName(table) + ".csv");
+			InputStreamReader isr = new InputStreamReader(fis);
+			BufferedReader br = new BufferedReader(isr);
 			String line = null;
 			
+			long pos = 0;
 			while ((line = br.readLine()) != null) {
-				index.insert(utils.splitLine(line, table));
-
+				index.insert(utils.splitLine(line, table), col, table, pos);
+				pos += line.length() + Main.offset;
 			}
-			index.closeIndex();
 			br.close();
 			
 			System.gc();

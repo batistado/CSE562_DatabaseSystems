@@ -7,6 +7,8 @@ import java.util.List;
 
 import Indexes.PrimaryIndex;
 import Indexes.Indexer;
+import Indexes.LinearPrimaryIndex;
+import Indexes.Position;
 import Indexes.TreeSearch;
 import Iterators.AggregationIterator;
 import Iterators.CrossProductIterator;
@@ -15,6 +17,7 @@ import Iterators.GroupByIterator;
 import Iterators.InMemoryGroupByIterator;
 import Iterators.IndexIterator;
 import Iterators.LimitIterator;
+import Iterators.LinearIndexIterator;
 import Iterators.ProjectIterator;
 import Iterators.RAIterator;
 import Iterators.SelectIterator;
@@ -180,24 +183,36 @@ public class QueryEvaluator {
 		String colName = utils.getOneSideColumnName(where);
 		
 		if (Indexer.indexMapping.containsKey(colName)) {
-			HashSet<String> fileNames = new HashSet<String>();
+			List<Position> positions = new ArrayList<Position>();
 			
-			PrimaryIndex tree = Indexer.indexMapping.get(colName);
+			LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
 			
 			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
 			
 			if (treeSearchObjects == null)
 				return new SelectIterator(fromIterator, where);
 			
+			Position searchObject;
 			for (TreeSearch treeSearchObject: treeSearchObjects) {
 				if (treeSearchObject.operation.equals("EQUALS")) {
-					fileNames.add(tree.search(treeSearchObject.leftValue));
+					searchObject = tree.search(treeSearchObject.leftValue);
+					
+					if (searchObject != null) {
+						positions.add(searchObject);
+					}
+					
 				} else {
-					fileNames.addAll(tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy));
+					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy);
+					
+					if (searchObject != null) {
+						positions.add(searchObject);
+					}
+					
 				}
 			}
 			
-			return new IndexIterator(fromTable, new ArrayList<String>(fileNames), where);
+			if (!positions.isEmpty())
+				return new LinearIndexIterator(fromTable, where, positions);
 		}
 		
 		return new SelectIterator(fromIterator, where);
