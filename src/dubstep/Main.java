@@ -33,7 +33,7 @@ public class Main {
 	public static boolean isInMemory;
 	public static int sortedRunSize = 2;
 	public static int sortBufferSize = 100000;
-	public static int offset = 2;
+	public static int offset = 1;
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {

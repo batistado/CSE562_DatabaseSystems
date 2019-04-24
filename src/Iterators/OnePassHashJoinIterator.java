@@ -59,6 +59,7 @@ public class OnePassHashJoinIterator implements RAIterator{
 	
 	public void resetIterator() {
 		this.rightIterator.resetIterator();
+		buffer.clear();
 		row = null;
 	}
 
@@ -96,6 +97,7 @@ public class OnePassHashJoinIterator implements RAIterator{
 			}
 		}
 		
+		System.gc();
 		return false;
 	}
 

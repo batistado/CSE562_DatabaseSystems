@@ -210,7 +210,7 @@ public class QueryEvaluator {
 			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
 
 			if (treeSearchObjects == null) {
-				return checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
+				return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
 			}
 //				return new SelectIterator(fromIterator, where);
 
@@ -238,83 +238,72 @@ public class QueryEvaluator {
 				return new LinearIndexIterator(fromTable, where, positions);
 		}
 
-		return checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
+		return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
 	}
 	
-	public RAIterator checkAndAddSecondaryIndex(String colName, Expression where, FromIterator fromIterator, Table fromTable) {
-		if (Indexer.secondaryIndexMapping.containsKey(colName)) {
-			List<Position> positions = new ArrayList<Position>();
-
-			LinearSecondaryIndex tree = Indexer.secondaryIndexMapping.get(colName);
-
-			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
-
-			if (treeSearchObjects == null)
-				return new SelectIterator(fromIterator, where);
-
-			List<Position> searchObject;
-			for (TreeSearch treeSearchObject : treeSearchObjects) {
-				if (treeSearchObject.operation.equals("EQUALS")) {
-					searchObject = tree.search(treeSearchObject.leftValue);
-
-					if (searchObject != null) {
-						positions.addAll(searchObject);
-					}
-
-				} else {
-					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
-							treeSearchObject.rightValue, treeSearchObject.rightPolicy);
-
-					if (searchObject != null) {
-						positions.addAll(searchObject);
-					}
-
-				}
-			}
-
-			if (!positions.isEmpty())
-				return new LinearIndexIterator(fromTable, where, positions);
-		}
-		
-		return new SelectIterator(fromIterator, where);
-	}
+	
 
 	public RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter) {
-		RAIterator iterator = null;
+//		Join firstJoin = new Join();
+//		firstJoin.setRightItem(fromTable);
+//		firstJoin.setSimple(true);
+//
+//		joins.add(firstJoin);
+//
+//		Collections.sort(joins, new Comparator<Join>() {
+//			@Override
+//			public int compare(Join o1, Join o2) {
+//				// TODO Auto-generated method stub
+//				String table1 = ((Table) o1.getRightItem()).getName();
+//				String table2 = ((Table) o2.getRightItem()).getName();
+//
+//				Integer left = Indexer.tableSizeMapping.get(table1);
+//				Integer right = Indexer.tableSizeMapping.get(table2);
+//
+//				return left.compareTo(right);
+//			}
+//		});
 
-		Join firstJoin = new Join();
-		firstJoin.setRightItem(fromTable);
-
-		joins.add(firstJoin);
-
-		Collections.sort(joins, new Comparator<Join>() {
-			@Override
-			public int compare(Join o1, Join o2) {
-				// TODO Auto-generated method stub
-				String table1 = ((Table) o1.getRightItem()).getName();
-				String table2 = ((Table) o2.getRightItem()).getName();
-
-				Integer left = Indexer.tableSizeMapping.get(table1);
-				Integer right = Indexer.tableSizeMapping.get(table2);
-
-				return -1 * left.compareTo(right);
-			}
-		});
-
-		RAIterator rightIterator = null;
+		RAIterator leftIterator = new FromIterator(fromTable);
 		for (Join join : joins) {
-			Table rightTable = (Table) join.getRightItem();
-
-			if (rightIterator == null) {
-				rightIterator = new FromIterator(rightTable);
-			} else {
-				rightIterator = new CrossProductIterator(new FromIterator(rightTable), rightIterator);
-			}
+			Table leftTable = (Table) join.getRightItem();
+			leftIterator = new CrossProductIterator(leftIterator, new FromIterator(leftTable));
 		}
 
-		iterator = new CrossProductIterator(new FromIterator(fromTable), rightIterator);
+		return filter == null ? leftIterator : new SelectIterator(leftIterator, filter);
 
-		return filter == null ? iterator : new SelectIterator(iterator, filter);
+//		Join firstJoin = new Join();
+//		firstJoin.setRightItem(fromTable);
+//		firstJoin.setSimple(true);
+//
+//		joins.add(firstJoin);
+//
+//		Collections.sort(joins, new Comparator<Join>() {
+//			@Override
+//			public int compare(Join o1, Join o2) {
+//				// TODO Auto-generated method stub
+//				String table1 = ((Table) o1.getRightItem()).getName();
+//				String table2 = ((Table) o2.getRightItem()).getName();
+//
+//				Integer left = Indexer.tableSizeMapping.get(table1);
+//				Integer right = Indexer.tableSizeMapping.get(table2);
+//
+//				return left.compareTo(right);
+//			}
+//		});
+//
+//		RAIterator leftIterator = null;
+//		for (Join join : joins) {
+//			Table leftTable = (Table) join.getRightItem();
+//
+//			if (leftIterator == null) {
+//				leftIterator = new FromIterator(leftTable);
+//			} else {
+//				leftIterator = new CrossProductIterator(leftIterator, new FromIterator(leftTable));
+//			}
+//		}
+//
+//		return filter == null ? leftIterator : new SelectIterator(leftIterator, filter);
 	}
 
 	public RAIterator evaluateQuery(Select selectQuery) {

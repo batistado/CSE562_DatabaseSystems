@@ -44,6 +44,44 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 public class utils {
+	public static RAIterator checkAndAddSecondaryIndex(String colName, Expression where, FromIterator fromIterator, Table fromTable) {
+		if (Indexer.secondaryIndexMapping.containsKey(colName)) {
+			List<Position> positions = new ArrayList<Position>();
+
+			LinearSecondaryIndex tree = Indexer.secondaryIndexMapping.get(colName);
+
+			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
+
+			if (treeSearchObjects == null)
+				return new SelectIterator(fromIterator, where);
+
+			List<Position> searchObject;
+			for (TreeSearch treeSearchObject : treeSearchObjects) {
+				if (treeSearchObject.operation.equals("EQUALS")) {
+					searchObject = tree.search(treeSearchObject.leftValue);
+
+					if (searchObject != null) {
+						positions.addAll(searchObject);
+					}
+
+				} else {
+					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
+							treeSearchObject.rightValue, treeSearchObject.rightPolicy);
+
+					if (searchObject != null) {
+						positions.addAll(searchObject);
+					}
+
+				}
+			}
+
+			if (!positions.isEmpty())
+				return new LinearIndexIterator(fromTable, where, positions);
+		}
+		
+		return new SelectIterator(fromIterator, where);
+	}
+	
 	public static Comparator<PrimitiveValue> c = new Comparator<PrimitiveValue>() {
 		@Override
 		public int compare(PrimitiveValue o1, PrimitiveValue o2) {
