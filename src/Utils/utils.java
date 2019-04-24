@@ -9,8 +9,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
+import Indexes.Indexer;
+import Indexes.LinearSecondaryIndex;
+import Indexes.Position;
 import Indexes.PrimaryIndex;
 import Indexes.TreeSearch;
+import Iterators.FromIterator;
+import Iterators.LinearIndexIterator;
+import Iterators.RAIterator;
+import Iterators.SelectIterator;
 import Models.TupleSchema;
 import dubstep.Main;
 import net.sf.jsqlparser.eval.Eval;
@@ -381,9 +388,19 @@ public class utils {
 			Expression leftExpression = ((BinaryExpression) e).getLeftExpression();
 			Expression rightExpression = ((BinaryExpression) e).getRightExpression();
 			
-			if (leftExpression instanceof Column && rightExpression instanceof PrimitiveValue) {
+			if (leftExpression instanceof Column && (rightExpression instanceof PrimitiveValue || rightExpression instanceof Function)) {
+				if (rightExpression instanceof Function && (((Function) rightExpression).getName()).equals("DATE")) {
+					String dateString = getDate((Function) rightExpression);
+					((BinaryExpression) e).setRightExpression(new DateValue(dateString.substring(1, dateString.length() - 1)));
+				}
+				
 				return (Column) leftExpression;
-			} else if (rightExpression instanceof Column && leftExpression instanceof PrimitiveValue) {
+			} else if (rightExpression instanceof Column && (leftExpression instanceof PrimitiveValue || leftExpression instanceof Function)) {
+				if (leftExpression instanceof Function && (((Function) leftExpression).getName()).equals("DATE")) {
+					String dateString = getDate((Function) leftExpression);
+					((BinaryExpression) e).setLeftExpression(new DateValue(dateString.substring(1, dateString.length() - 1)));
+				}
+				
 				return (Column) rightExpression;
 			}
 		}

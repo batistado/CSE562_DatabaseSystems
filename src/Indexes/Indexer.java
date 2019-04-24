@@ -24,7 +24,11 @@ import Iterators.FromIterator;
 import Iterators.RAIterator;
 import Utils.utils;
 import dubstep.Main;
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
+import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
@@ -32,21 +36,33 @@ import net.sf.jsqlparser.statement.create.table.Index;
 
 public class Indexer {
 	public static Map<String, LinearPrimaryIndex> indexMapping = new HashMap<>();
-	
+	public static Map<String, LinearSecondaryIndex> secondaryIndexMapping = new HashMap<>();
+	public static Map<String, Integer> tableSizeMapping = new HashMap<>();
+
 	public static int getBranchingFactor(String tableName) {
 		switch (tableName) {
-		case "LINEITEM": return 25000;
-		case "ORDERS": return 5000;
-		case "CUSTOMER": return 500;
-		case "PART": return 800;
-		case "SUPPLIER": return 100;
-		case "PARTSUPP": return 5000;
-		default: return 1000;
+		case "LINEITEM":
+			return 25000;
+		case "ORDERS":
+			return 5000;
+		case "CUSTOMER":
+			return 500;
+		case "PART":
+			return 800;
+		case "SUPPLIER":
+			return 100;
+		case "PARTSUPP":
+			return 5000;
+		default:
+			return 1000;
 		}
 	}
 
 	public static void addIndexes(CreateTable createTable) {
 		if (createTable.getIndexes() != null) {
+			LinearPrimaryIndex primaryIndex = null;
+			List<LinearSecondaryIndex> secondaryIndexes = new ArrayList<LinearSecondaryIndex>();
+
 			for (Index tableIndex : createTable.getIndexes()) {
 				List<Column> indexOnColumns = new ArrayList<Column>();
 				for (String colName : tableIndex.getColumnsNames()) {
@@ -54,53 +70,147 @@ public class Indexer {
 				}
 
 				if (tableIndex.getType().equals("PRIMARY KEY")) {
-					Table table = createTable.getTable();
-					
-					//PrimaryIndex index = new PrimaryIndex(table, indexOnColumns, getBranchingFactor(table.getName()));
-					LinearPrimaryIndex index = new LinearPrimaryIndex();
-					fillIndex(index, createTable.getTable(), indexOnColumns.get(0));
-	
-					indexMapping.put(utils.getTableName(createTable.getTable()) + "." + tableIndex.getColumnsNames().get(0), index);
-					indexMapping.put(tableIndex.getColumnsNames().get(0), index);
+					primaryIndex = new LinearPrimaryIndex(createTable.getTable(), indexOnColumns.get(0));
+
+					indexMapping.put(
+							utils.getTableName(createTable.getTable()) + "." + tableIndex.getColumnsNames().get(0),
+							primaryIndex);
+				} else {
+					if (!createTable.getTable().getName().equals("LINEITEM")) {
+						LinearSecondaryIndex secondaryIndex = new LinearSecondaryIndex(createTable.getTable(),
+								indexOnColumns.get(0));
+
+						secondaryIndexes.add(secondaryIndex);
+
+						secondaryIndexMapping.put(
+								utils.getTableName(createTable.getTable()) + "." + tableIndex.getColumnsNames().get(0),
+								secondaryIndex);
+					}
 				}
 			}
+
+			fillIndexes(primaryIndex, secondaryIndexes);
 		}
-		
+
+		//writeIndexesToDisk();
+	}
+
+	public static void writeIndexesToDisk() {
 		try {
-			ObjectOutputStream indexWriter = new ObjectOutputStream(new FileOutputStream(RAIterator.TEMP_DIR + "Index.csv"));
-			indexWriter.writeObject(indexMapping);
-			indexWriter.reset();
-			indexWriter.close();
-			System.gc();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			BufferedWriter bw = new BufferedWriter(new FileWriter(RAIterator.TEMP_DIR + "Index.csv"));
+
+			String line = "";
+			for (String tableName : indexMapping.keySet()) {
+				LinearPrimaryIndex index = indexMapping.get(tableName);
+				bw.write("TABLE:" + tableName);
+				bw.write("\n");
+				bw.write("TYPE:"
+						+ Main.tableSchemas.get(tableName.split("\\.")[0]).getSchemaByName(tableName).getDataType());
+				bw.write("\n");
+
+				for (int i = 0; i < index.keys.size(); i++) {
+					line = "";
+					line += index.keys.get(i).toString() + ",";
+					Position pos = index.positions.get(i);
+					line += pos.startPosition + ",";
+					line += pos.endPosition;
+					bw.write(line);
+					bw.write("\n");
+				}
+				line = "";
+			}
+
+			bw.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	public static void fillIndex(LinearPrimaryIndex index, Table table, Column col) {
+	public static void loadIndex() {
 		try {
-			FileInputStream fis = new FileInputStream(RAIterator.DIR + utils.getTableName(table) + ".csv");
+			BufferedReader br = new BufferedReader(new FileReader(RAIterator.TEMP_DIR + "Index.csv"));
+
+			String line = "";
+
+			LinearPrimaryIndex index = null;
+			String columnName = "";
+			String colDatatype = "";
+			while ((line = br.readLine()) != null) {
+				if (line.startsWith("TABLE")) {
+					if (index != null) {
+						indexMapping.put(columnName, index);
+					}
+					index = new LinearPrimaryIndex();
+					columnName = line.substring(6);
+				} else if (line.startsWith("TYPE")) {
+					colDatatype = line.substring(5);
+				} else {
+					String[] splitLine = line.split(",");
+					PrimitiveValue key = null;
+
+					if (colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+						key = new StringValue(splitLine[0]);
+					} else if (colDatatype.equals("int")) {
+						key = new LongValue(splitLine[0]);
+					} else if (colDatatype.equals("decimal")) {
+						key = new DoubleValue(splitLine[0]);
+					} else if (colDatatype.equals("date")) {
+						key = new DateValue(splitLine[0]);
+					}
+
+					index.addRow(key, Long.parseLong(splitLine[1]), Long.parseLong(splitLine[2]));
+				}
+			}
+			
+			if (index != null) {
+				indexMapping.put(columnName, index);
+			}
+
+			br.close();
+
+			System.out.println("Index ready");
+			System.gc();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public static void fillIndexes(LinearPrimaryIndex index, List<LinearSecondaryIndex> secondaryIndexes) {
+		try {
+			Table table = index.table;
+			FileInputStream fis = new FileInputStream(RAIterator.DIR + utils.getTableName(index.table) + ".csv");
 			InputStreamReader isr = new InputStreamReader(fis);
 			BufferedReader br = new BufferedReader(isr);
 			String line = null;
-			
+
 			long pos = 0;
 			while ((line = br.readLine()) != null) {
-				index.insert(utils.splitLine(line, table), col, table, pos);
+				ArrayList<PrimitiveValue> row = utils.splitLine(line, table);
+				PrimitiveValue pKey = utils.projectColumnValue(row, index.column,
+						Main.tableSchemas.get(utils.getTableName(table)));
+				index.insert(pKey, pos);
+
+				Position position = index.search(pKey);
+
+				for (LinearSecondaryIndex si : secondaryIndexes) {
+					PrimitiveValue sKey = utils.projectColumnValue(row, si.column,
+							Main.tableSchemas.get(utils.getTableName(table)));
+					si.insert(sKey, position);
+				}
+
 				pos += line.length() + Main.offset;
 			}
+
 			br.close();
-			
+
 			System.gc();
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-				
+
 	}
-}		
+}

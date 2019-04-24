@@ -2,12 +2,14 @@ package dubstep;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
 import Indexes.PrimaryIndex;
 import Indexes.Indexer;
 import Indexes.LinearPrimaryIndex;
+import Indexes.LinearSecondaryIndex;
 import Indexes.Position;
 import Indexes.TreeSearch;
 import Iterators.AggregationIterator;
@@ -28,6 +30,7 @@ import Utils.Optimizer;
 import Utils.utils;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -44,128 +47,145 @@ import net.sf.jsqlparser.statement.select.Union;
 public class QueryEvaluator {
 	public RAIterator evaluatePlainSelect(PlainSelect plainSelectQuery) {
 		FromItem fromItem = plainSelectQuery.getFromItem();
-		
+
 		RAIterator innerIterator = null;
 		if (fromItem == null) {
 			// Implement expression evaluation
 			return null;
-		}
-		else if (fromItem instanceof SubSelect) {
-			innerIterator =  evaluateSubQuery(plainSelectQuery);
-		} 
-		else {
+		} else if (fromItem instanceof SubSelect) {
+			innerIterator = evaluateSubQuery(plainSelectQuery);
+		} else {
 			innerIterator = evaluateFromTables(plainSelectQuery);
 		}
-		
+
 		innerIterator = addProjection(innerIterator, plainSelectQuery);
 		innerIterator = addSort(innerIterator, plainSelectQuery.getOrderByElements());
 		innerIterator = addLimit(innerIterator, plainSelectQuery.getLimit());
-		
+
 		return innerIterator;
 	}
-	
+
 	public RAIterator addProjection(RAIterator iterator, PlainSelect plainSelect) {
 		List<Column> groupByColumns = plainSelect.getGroupByColumnReferences();
-		
+
 		if (groupByColumns != null && !groupByColumns.isEmpty()) {
 			RAIterator aggIterator = null;
 			if (!Main.isInMemory)
-				aggIterator = new AggregationIterator(new GroupByIterator(new Optimizer().optimizeRA(iterator), groupByColumns), plainSelect.getSelectItems());
+				aggIterator = new AggregationIterator(
+						new GroupByIterator(new Optimizer().optimizeRA(iterator), groupByColumns),
+						plainSelect.getSelectItems());
 			else
-				aggIterator = new InMemoryGroupByIterator(new Optimizer().optimizeRA(iterator), plainSelect.getSelectItems());
-			//RAIterator aggIterator = new AggregationIterator(new GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
-			
-			return plainSelect.getHaving() == null ? aggIterator : new SelectIterator(aggIterator, plainSelect.getHaving());
+				aggIterator = new InMemoryGroupByIterator(new Optimizer().optimizeRA(iterator),
+						plainSelect.getSelectItems());
+			// RAIterator aggIterator = new AggregationIterator(new
+			// GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
+
+			return plainSelect.getHaving() == null ? aggIterator
+					: new SelectIterator(aggIterator, plainSelect.getHaving());
 		}
-		
+
 		boolean hasAggregation = false;
-		for(SelectItem selectItem : plainSelect.getSelectItems()) {
-			if (selectItem instanceof SelectExpressionItem && ((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
+		for (SelectItem selectItem : plainSelect.getSelectItems()) {
+			if (selectItem instanceof SelectExpressionItem
+					&& ((SelectExpressionItem) selectItem).getExpression() instanceof Function) {
 				hasAggregation = true;
 				break;
 			}
 		}
-		
-		return hasAggregation ? new AggregationIterator(iterator, plainSelect.getSelectItems()) : new ProjectIterator(iterator, plainSelect.getSelectItems());
+
+		return hasAggregation ? new AggregationIterator(iterator, plainSelect.getSelectItems())
+				: new ProjectIterator(iterator, plainSelect.getSelectItems());
 	}
-	
+
 	public RAIterator addLimit(RAIterator iterator, Limit limit) {
 		if (limit == null)
 			return iterator;
-		
+
 		return new LimitIterator(iterator, limit);
 	}
-	
+
 	public RAIterator addSort(RAIterator iterator, List<OrderByElement> orderByElements) {
 		if (orderByElements == null || orderByElements.isEmpty())
 			return iterator;
-		
-		
+
 		return new SortIterator(new Optimizer().optimizeRA(iterator), orderByElements);
-		//return new SortIterator(iterator, orderByElements);
+		// return new SortIterator(iterator, orderByElements);
 	}
-	
+
 	public RAIterator evaluateSubQuery(PlainSelect selectQuery) {
 		Expression where = selectQuery.getWhere();
 		SubSelect subQuery = (SubSelect) selectQuery.getFromItem();
 		List<Join> joins = selectQuery.getJoins();
-		
+
 		if (joins != null && !joins.isEmpty()) {
 			return evaluateSubQueryJoins(subQuery, joins, where);
-		} 
-		else {
+		} else {
 			// Write Union logic
 			PlainSelect subSelect = (PlainSelect) subQuery.getSelectBody();
-			return where == null ? new SubQueryIterator(evaluatePlainSelect(subSelect), subQuery.getAlias()) : new SelectIterator(new SubQueryIterator(evaluatePlainSelect(subSelect), subQuery.getAlias()), where);
+			return where == null ? new SubQueryIterator(evaluatePlainSelect(subSelect), subQuery.getAlias())
+					: new SelectIterator(new SubQueryIterator(evaluatePlainSelect(subSelect), subQuery.getAlias()),
+							where);
 		}
-		
+
 	}
-	
+
 	public RAIterator evaluateSubQueryJoins(SubSelect leftSubSelect, List<Join> joins, Expression filter) {
 		RAIterator iterator = null;
-		
+
 		if (joins.size() == 1) {
 			SubSelect rightSubSelect = (SubSelect) joins.get(0).getRightItem();
-			iterator = new CrossProductIterator(new SubQueryIterator(evaluatePlainSelect((PlainSelect) leftSubSelect.getSelectBody()), leftSubSelect.getAlias()), new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()), rightSubSelect.getAlias()));
+			iterator = new CrossProductIterator(
+					new SubQueryIterator(evaluatePlainSelect((PlainSelect) leftSubSelect.getSelectBody()),
+							leftSubSelect.getAlias()),
+					new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()),
+							rightSubSelect.getAlias()));
 		} else {
 			Collections.reverse(joins);
-			
+
 			RAIterator rightIterator = null;
-			for (Join join: joins) {
+			for (Join join : joins) {
 				SubSelect rightSubSelect = (SubSelect) join.getRightItem();
-				
+
 				if (rightIterator == null) {
-					rightIterator = new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()), rightSubSelect.getAlias());
+					rightIterator = new SubQueryIterator(
+							evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()),
+							rightSubSelect.getAlias());
 				} else {
-					rightIterator = new CrossProductIterator(new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()), rightSubSelect.getAlias()), rightIterator);
+					rightIterator = new CrossProductIterator(
+							new SubQueryIterator(evaluatePlainSelect((PlainSelect) rightSubSelect.getSelectBody()),
+									rightSubSelect.getAlias()),
+							rightIterator);
 				}
 			}
-			
-			iterator = new CrossProductIterator(new SubQueryIterator(evaluatePlainSelect((PlainSelect) leftSubSelect.getSelectBody()), leftSubSelect.getAlias()), rightIterator);
+
+			iterator = new CrossProductIterator(
+					new SubQueryIterator(evaluatePlainSelect((PlainSelect) leftSubSelect.getSelectBody()),
+							leftSubSelect.getAlias()),
+					rightIterator);
 		}
-		
+
 		return filter == null ? iterator : new SelectIterator(iterator, filter);
 	}
-	
-	public RAIterator evaluateUnion(Union union){
+
+	public RAIterator evaluateUnion(Union union) {
 		if (!union.isAll()) {
 			// TODO: Union with distinct
 			return null;
 		}
-		
+
 		List<RAIterator> iteratorsList = new ArrayList<>();
 		for (PlainSelect plainSelect : union.getPlainSelects()) {
 			iteratorsList.add(evaluatePlainSelect(plainSelect));
 		}
-		
+
 		return new UnionIterator(iteratorsList);
 	}
-	
+
 	public RAIterator evaluateFromTables(PlainSelect plainSelect) {
 		Expression where = plainSelect.getWhere();
 		Table fromTable = (Table) plainSelect.getFromItem();
 		List<Join> joins = plainSelect.getJoins();
-		
+
 		if (joins == null || joins.isEmpty()) {
 			return evaluateFromTable(fromTable, where);
 		} else {
@@ -173,82 +193,134 @@ public class QueryEvaluator {
 			return evaluateJoins(fromTable, joins, where);
 		}
 	}
-	
+
 	public RAIterator evaluateFromTable(Table fromTable, Expression where) {
 		FromIterator fromIterator = new FromIterator(fromTable);
-		
+
 		if (where == null)
 			return fromIterator;
-		
+
 		String colName = utils.getOneSideColumnName(where);
-		
+
 		if (Indexer.indexMapping.containsKey(colName)) {
 			List<Position> positions = new ArrayList<Position>();
-			
+
 			LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
-			
+
 			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
-			
-			if (treeSearchObjects == null)
-				return new SelectIterator(fromIterator, where);
-			
+
+			if (treeSearchObjects == null) {
+				return checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
+			}
+//				return new SelectIterator(fromIterator, where);
+
 			Position searchObject;
-			for (TreeSearch treeSearchObject: treeSearchObjects) {
+			for (TreeSearch treeSearchObject : treeSearchObjects) {
 				if (treeSearchObject.operation.equals("EQUALS")) {
 					searchObject = tree.search(treeSearchObject.leftValue);
-					
+
 					if (searchObject != null) {
 						positions.add(searchObject);
 					}
-					
+
 				} else {
-					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy);
-					
+					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
+							treeSearchObject.rightValue, treeSearchObject.rightPolicy);
+
 					if (searchObject != null) {
 						positions.add(searchObject);
 					}
-					
+
 				}
 			}
-			
+
+			if (!positions.isEmpty())
+				return new LinearIndexIterator(fromTable, where, positions);
+		}
+
+		return checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
+	}
+	
+	public RAIterator checkAndAddSecondaryIndex(String colName, Expression where, FromIterator fromIterator, Table fromTable) {
+		if (Indexer.secondaryIndexMapping.containsKey(colName)) {
+			List<Position> positions = new ArrayList<Position>();
+
+			LinearSecondaryIndex tree = Indexer.secondaryIndexMapping.get(colName);
+
+			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
+
+			if (treeSearchObjects == null)
+				return new SelectIterator(fromIterator, where);
+
+			List<Position> searchObject;
+			for (TreeSearch treeSearchObject : treeSearchObjects) {
+				if (treeSearchObject.operation.equals("EQUALS")) {
+					searchObject = tree.search(treeSearchObject.leftValue);
+
+					if (searchObject != null) {
+						positions.addAll(searchObject);
+					}
+
+				} else {
+					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
+							treeSearchObject.rightValue, treeSearchObject.rightPolicy);
+
+					if (searchObject != null) {
+						positions.addAll(searchObject);
+					}
+
+				}
+			}
+
 			if (!positions.isEmpty())
 				return new LinearIndexIterator(fromTable, where, positions);
 		}
 		
 		return new SelectIterator(fromIterator, where);
 	}
-	
+
 	public RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter) {
 		RAIterator iterator = null;
-		
-		if (joins.size() == 1) {
-			Table rightTable = (Table) joins.get(0).getRightItem();
-			iterator = new CrossProductIterator(new FromIterator(fromTable), new FromIterator(rightTable));
-		} else {
-			Collections.reverse(joins);
-			
-			RAIterator rightIterator = null;
-			for (Join join: joins) {
-				Table rightTable = (Table) join.getRightItem();
-				
-				if (rightIterator == null) {
-					rightIterator = new FromIterator(rightTable);
-				} else {
-					rightIterator = new CrossProductIterator(new FromIterator(rightTable), rightIterator);
-				}
+
+		Join firstJoin = new Join();
+		firstJoin.setRightItem(fromTable);
+
+		joins.add(firstJoin);
+
+		Collections.sort(joins, new Comparator<Join>() {
+			@Override
+			public int compare(Join o1, Join o2) {
+				// TODO Auto-generated method stub
+				String table1 = ((Table) o1.getRightItem()).getName();
+				String table2 = ((Table) o2.getRightItem()).getName();
+
+				Integer left = Indexer.tableSizeMapping.get(table1);
+				Integer right = Indexer.tableSizeMapping.get(table2);
+
+				return -1 * left.compareTo(right);
 			}
-			
-			iterator = new CrossProductIterator(new FromIterator(fromTable), rightIterator);
+		});
+
+		RAIterator rightIterator = null;
+		for (Join join : joins) {
+			Table rightTable = (Table) join.getRightItem();
+
+			if (rightIterator == null) {
+				rightIterator = new FromIterator(rightTable);
+			} else {
+				rightIterator = new CrossProductIterator(new FromIterator(rightTable), rightIterator);
+			}
 		}
-		
+
+		iterator = new CrossProductIterator(new FromIterator(fromTable), rightIterator);
+
 		return filter == null ? iterator : new SelectIterator(iterator, filter);
 	}
-	
+
 	public RAIterator evaluateQuery(Select selectQuery) {
 		if (selectQuery.getSelectBody() instanceof PlainSelect) {
-			return evaluatePlainSelect((PlainSelect)selectQuery.getSelectBody());
-		}
-		else {
+			return evaluatePlainSelect((PlainSelect) selectQuery.getSelectBody());
+		} else {
 			return evaluateUnion((Union) selectQuery.getSelectBody());
 		}
 	}

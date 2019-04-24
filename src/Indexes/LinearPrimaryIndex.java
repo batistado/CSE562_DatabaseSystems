@@ -3,6 +3,7 @@ package Indexes;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 
 import Indexes.PrimaryIndex.RangePolicy;
 import Utils.utils;
@@ -14,15 +15,22 @@ import net.sf.jsqlparser.schema.Table;
 public class LinearPrimaryIndex implements Serializable {
 	ArrayList<PrimitiveValue> keys;
 	ArrayList<Position> positions;
+	public Table table;
+	public Column column;
 
+	public LinearPrimaryIndex(Table table, Column column) {
+		keys = new ArrayList<PrimitiveValue>();
+		positions = new ArrayList<Position>();
+		this.table = table;
+		this.column = column;
+	}
+	
 	public LinearPrimaryIndex() {
 		keys = new ArrayList<PrimitiveValue>();
 		positions = new ArrayList<Position>();
 	}
 
-	public void insert(ArrayList<PrimitiveValue> row, Column column, Table table, long position) {
-		PrimitiveValue key = utils.projectColumnValue(row, column, Main.tableSchemas.get(utils.getTableName(table)));
-
+	public void insert(PrimitiveValue key, long position) {
 		_insert(key, position);
 	}
 
@@ -51,6 +59,17 @@ public class LinearPrimaryIndex implements Serializable {
 		}
 
 		return null;
+	}
+	
+	public void addRow(PrimitiveValue key, Long startPos, Long endPos) {
+		keys.add(key);
+		
+		Position pos = new Position();
+		
+		pos.startPosition = startPos;
+		pos.endPosition = endPos;
+		
+		positions.add(pos);
 	}
 
 	public Position searchRange(PrimitiveValue left, RangePolicy leftPolicy, PrimitiveValue right,

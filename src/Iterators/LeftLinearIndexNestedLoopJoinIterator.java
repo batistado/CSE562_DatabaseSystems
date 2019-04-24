@@ -93,7 +93,7 @@ public class LeftLinearIndexNestedLoopJoinIterator implements RAIterator {
 	}
 
 	private void seekToPosition(long newPosition) {
-		try {
+		try {			
 			fis.getChannel().position(newPosition);
 			InputStreamReader isr = new InputStreamReader(fis);
 			reader = new BufferedReader(isr);

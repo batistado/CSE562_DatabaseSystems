@@ -33,7 +33,7 @@ public class Main {
 	public static boolean isInMemory;
 	public static int sortedRunSize = 2;
 	public static int sortBufferSize = 100000;
-	public static int offset = 1;
+	public static int offset = 2;
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
@@ -44,6 +44,18 @@ public class Main {
 	            isInMemory = true;
 	        }
 		}
+		
+		Indexer.tableSizeMapping.put("LINEITEM", 6001215);
+		Indexer.tableSizeMapping.put("ORDERS", 1500000);
+		Indexer.tableSizeMapping.put("CUSTOMER", 150000);
+		Indexer.tableSizeMapping.put("REGION", 5);
+		Indexer.tableSizeMapping.put("NATION", 25);
+		Indexer.tableSizeMapping.put("SUPPLIER", 10000);
+		Indexer.tableSizeMapping.put("PART", 200000);
+		Indexer.tableSizeMapping.put("PARTSUPP", 800000);
+		//10000
+		
+		
 		
 		// Check and make a temp dir
 		File directory = new File(RAIterator.TEMP_DIR);
@@ -108,13 +120,15 @@ public class Main {
 	public static RAIterator evaluateQuery(Select selectQuery) {
 		if (Main.tableSchemas.isEmpty()) {
 			try {
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Index.csv"));
-				Indexer.indexMapping = (Map<String, LinearPrimaryIndex>) ois.readObject();
-				ois.close();
+//				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Index.csv"));
+//				Indexer.indexMapping = (Map<String, LinearPrimaryIndex>) ois.readObject();
+//				ois.close();
 				
-				ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Schema.csv"));
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Schema.csv"));
 				tableSchemas = (Map<String, TupleSchema>) ois.readObject();
 				ois.close();
+				
+				Indexer.loadIndex();
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

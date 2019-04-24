@@ -37,7 +37,6 @@ public class LinearIndexIterator implements RAIterator{
 		this.positions = positions;
 		this.table = table;
 		resetIterator();
-		initializeReader();
 		this.where = where;
 		this.setIteratorSchema();
 		//System.gc();
@@ -55,6 +54,7 @@ public class LinearIndexIterator implements RAIterator{
 	public void resetIterator() {
 		currIndex = 0;
 		currPosition = positions.get(currIndex).startPosition;
+		initializeReader();
 	}
 	
 	public void initializeReader() {
@@ -65,6 +65,17 @@ public class LinearIndexIterator implements RAIterator{
 			reader = new BufferedReader(isr);
 		} catch (IOException ex) {
 			ex.printStackTrace();
+		}
+	}
+	
+	private void seekToPosition(long newPosition) {
+		try {
+			fis.getChannel().position(newPosition);
+			InputStreamReader isr = new InputStreamReader(fis);
+			reader = new BufferedReader(isr);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -80,6 +91,7 @@ public class LinearIndexIterator implements RAIterator{
 				while (currIndex + 1 < positions.size()) {
 					currIndex++;
 					currPosition = positions.get(currIndex).startPosition;
+					seekToPosition(currPosition);
 					
 					while (reader != null && currIndex < positions.size() && currPosition <= positions.get(currIndex).endPosition && (row = getLeftRow(reader.readLine())) != null) {
 						if (where == null || utils.filterRow(row, where, fromSchema))

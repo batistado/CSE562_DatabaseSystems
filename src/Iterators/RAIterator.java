@@ -12,11 +12,11 @@ public interface RAIterator extends Iterator<ArrayList<PrimitiveValue>>  {
 	//public final String DIR = "/Users/msyed3/Downloads/sample queries/Sanity_Check_Examples/data/";
 	//public final String DIR = "/Users/areeb/eclipse-workspace/team8/data/";
 	//public final String DIR = "/Users/msyed3/Downloads/sample queries/NBA_Examples/";
-	//public final String DIR = "/Users/msyed3/Downloads/sample queries/Test/";
-	public final String DIR = "data/";
+	public final String DIR = "/Users/msyed3/Downloads/sample queries/Test/";
+	//public final String DIR = "data/";
 	
-	public final String TEMP_DIR = "team8_temp/";
-	//public final String TEMP_DIR = DIR + "team8_temp/";
+	//public final String TEMP_DIR = "team8_temp/";
+	public final String TEMP_DIR = DIR + "team8_temp/";
 	
 	public void resetWhere();
 	
