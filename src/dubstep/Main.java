@@ -63,17 +63,17 @@ public class Main {
 	        directory.mkdir();
 	    }
 	    
-//	    // Check and make a Index dir
-// 		directory = new File(RAIterator.TEMP_DIR + "Indexes/");
-// 	    if (!directory.exists()){
-// 	        directory.mkdir();
-// 	    }
-// 	    
-// 	// Check and make a Secondary Index dir
-// 		directory = new File(RAIterator.TEMP_DIR + "SecondaryIndexes/");
-// 	    if (!directory.exists()){
-// 	        directory.mkdir();
-// 	    }
+	    // Check and make a Index dir
+ 		directory = new File(RAIterator.TEMP_DIR + "Indexes/");
+ 	    if (!directory.exists()){
+ 	        directory.mkdir();
+ 	    }
+ 	    
+ 	    // Check and make a Secondary Index dir
+ 		directory = new File(RAIterator.TEMP_DIR + "SecondaryIndexes/");
+ 	    if (!directory.exists()){
+ 	        directory.mkdir();
+ 	    }
 		
 		CCJSqlParser parser;
 		
@@ -141,7 +141,7 @@ public class Main {
 				ois.close();
 				
 				Indexer.loadIndex();
-				Indexer.loadSecondaryIndex();
+				//Indexer.loadSecondaryIndex();
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
