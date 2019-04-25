@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import Iterators.FromIterator;
 import Iterators.RAIterator;
@@ -92,7 +93,8 @@ public class Indexer {
 			fillIndexes(primaryIndex, secondaryIndexes);
 		}
 
-		//writeIndexesToDisk();
+		writeIndexesToDisk();
+		writeSecondaryIndexesToDisk();
 	}
 
 	public static void writeIndexesToDisk() {
@@ -114,6 +116,49 @@ public class Indexer {
 					Position pos = index.positions.get(i);
 					line += pos.startPosition + ",";
 					line += pos.endPosition;
+					bw.write(line);
+					bw.write("\n");
+				}
+				line = "";
+			}
+
+			bw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static void writeSecondaryIndexesToDisk() {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(RAIterator.TEMP_DIR + "SecondaryIndex.csv"));
+
+			String line = "";
+			for (String tableName : secondaryIndexMapping.keySet()) {
+				LinearSecondaryIndex index = secondaryIndexMapping.get(tableName);
+				bw.write("TABLE:" + tableName);
+				bw.write("\n");
+				bw.write("TYPE:"
+						+ Main.tableSchemas.get(tableName.split("\\.")[0]).getSchemaByName(tableName).getDataType());
+				bw.write("\n");
+
+				for (int i = 0; i < index.keys.size(); i++) {
+					line = "";
+					line += index.keys.get(i).toString() + ":";
+					Set<Position> positions = index.positions.get(i);
+					
+					for(Position position: positions) {
+						line += position.startPosition + ",";
+					}
+					
+					line = line.substring(0, line.length() - 1);
+					line += ";";
+					
+					for(Position position: positions) {
+						line += position.endPosition + ",";
+					}
+				
+					line = line.substring(0, line.length() - 1);
 					bw.write(line);
 					bw.write("\n");
 				}
@@ -169,7 +214,60 @@ public class Indexer {
 
 			br.close();
 
-			System.out.println("Index ready");
+			System.gc();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static void loadSecondaryIndex() {
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(RAIterator.TEMP_DIR + "SecondaryIndex.csv"));
+
+			String line = "";
+
+			LinearSecondaryIndex index = null;
+			String columnName = "";
+			String colDatatype = "";
+			while ((line = br.readLine()) != null) {
+				if (line.startsWith("TABLE")) {
+					if (index != null) {
+						secondaryIndexMapping.put(columnName, index);
+					}
+					index = new LinearSecondaryIndex();
+					columnName = line.substring(6);
+				} else if (line.startsWith("TYPE")) {
+					colDatatype = line.substring(5);
+				} else {
+					String[] splitLine = line.split(":");
+					PrimitiveValue key = null;
+
+					if (colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+						key = new StringValue(splitLine[0]);
+					} else if (colDatatype.equals("int")) {
+						key = new LongValue(splitLine[0]);
+					} else if (colDatatype.equals("decimal")) {
+						key = new DoubleValue(splitLine[0]);
+					} else if (colDatatype.equals("date")) {
+						key = new DateValue(splitLine[0]);
+					}
+					
+					String[] splitKVs = splitLine[1].split(";");
+					
+					String[] starts = splitKVs[0].split(",");
+					String[] ends = splitKVs[1].split(",");
+
+					index.addRow(key, starts, ends);
+				}
+			}
+			
+			if (index != null) {
+				secondaryIndexMapping.put(columnName, index);
+			}
+
+			br.close();
+
 			System.gc();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

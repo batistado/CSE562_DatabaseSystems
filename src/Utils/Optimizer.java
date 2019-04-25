@@ -260,12 +260,11 @@ public class Optimizer {
 
 			if (anyJoinCondition != null) {
 				Column col = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
-//				if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(col.getWholeColumnName())) {
-//					return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-//							Indexer.indexMapping.get(col.getWholeColumnName()), anyJoinCondition);
-//				}
-//				else 
-					if (anyJoinCondition instanceof EqualsTo) {
+				if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(col.getWholeColumnName())) {
+					return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
+							Indexer.indexMapping.get(col.getWholeColumnName()), anyJoinCondition);
+				}
+				else if (anyJoinCondition instanceof EqualsTo) {
 					selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
 					
 					if (selectExpression != null) {

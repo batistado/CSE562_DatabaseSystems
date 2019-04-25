@@ -21,6 +21,22 @@ public class LinearSecondaryIndex {
 		keys = new ArrayList<PrimitiveValue>();
 		positions = new ArrayList<HashSet<Position>>();
 	}
+	
+	public void addRow(PrimitiveValue key, String[] starts, String[] ends) {
+		keys.add(key);
+		
+		HashSet<Position> tmp = new HashSet<Position>();
+		for (int i=0; i < starts.length; i++) {
+			Position pos = new Position();
+			
+			pos.startPosition = Long.parseLong(starts[i]);
+			pos.endPosition = Long.parseLong(ends[i]);
+			
+			tmp.add(pos);
+		}
+		
+		positions.add(tmp);
+	}
 
 	public LinearSecondaryIndex(Table table, Column column) {
 		keys = new ArrayList<PrimitiveValue>();
