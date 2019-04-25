@@ -457,9 +457,7 @@ public class utils {
 		return be.getRightExpression();
 	}
 	
-	public static List<TreeSearch> getSearchObject(Expression e) {
-		List<Expression> indexExpression = getIndexExpression(e);
-		
+	public static List<TreeSearch> fetchSearchObjects(List<Expression> indexExpression) {
 		if (indexExpression == null)
 			return null;
 		
@@ -557,6 +555,12 @@ public class utils {
 			searchObjects.add(rangeExpression);
 		
 		return searchObjects;
+	}
+	
+	public static List<TreeSearch> getSearchObject(Expression e) {
+		List<Expression> indexExpression = getIndexExpression(e);
+		
+		return fetchSearchObjects(indexExpression);
 	}
 	
 	public static PrimitiveValue getValueFromExpression(Expression e) {

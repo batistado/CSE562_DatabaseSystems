@@ -171,8 +171,13 @@ public class LeftLinearIndexNestedLoopJoinIterator implements RAIterator {
 
 		joinOn = (BinaryExpression) joinCondition;
 		joinOn.setRightExpression(searchKey);
+		
+		List<Expression> expressionList = new ArrayList<Expression>();
+		expressionList.add(joinOn);
 
-		List<TreeSearch> treeSearchObjects = utils.getSearchObject(joinOn);
+		List<TreeSearch> treeSearchObjects = utils.fetchSearchObjects(expressionList);
+
+//		List<TreeSearch> treeSearchObjects = utils.getSearchObject(joinOn);
 
 		for (TreeSearch treeSearchObject : treeSearchObjects) {
 			if (treeSearchObject.operation.equals("EQUALS")) {

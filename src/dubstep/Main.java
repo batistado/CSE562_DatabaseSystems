@@ -37,6 +37,7 @@ public class Main {
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
+		System.setProperty("XX", "+UseParallelGC");
 		isInMemory = false;
 		
 		for (String arg : args) {
@@ -91,7 +92,7 @@ public class Main {
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
 				}
-				//System.gc();
+				System.gc();
 				System.out.println("$> ");
 				parser = new CCJSqlParser(System.in);
 			}
@@ -141,7 +142,7 @@ public class Main {
 				ois.close();
 				
 				Indexer.loadIndex();
-				Indexer.loadSecondaryIndex();
+				//Indexer.loadSecondaryIndex();
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
