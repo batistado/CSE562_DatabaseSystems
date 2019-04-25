@@ -141,7 +141,7 @@ public class Main {
 				ois.close();
 				
 				Indexer.loadIndex();
-				//Indexer.loadSecondaryIndex();
+				Indexer.loadSecondaryIndex();
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
