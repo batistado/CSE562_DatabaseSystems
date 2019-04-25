@@ -347,6 +347,8 @@ public class Optimizer {
 				Integer rightCount = Indexer.tableSizeMapping.get(rightTableName);
 				
 				if (leftCount > rightCount) {
+					Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+					
 					selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
 					
 					if (selectExpression != null) {
@@ -354,9 +356,9 @@ public class Optimizer {
 					}
 					
 					return new LeftLinearIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
-							Indexer.indexMapping.get(leftColumn.getWholeColumnName()), anyJoinCondition);
+							Indexer.indexMapping.get(leftColumn.getWholeColumnName()), swappedExpression);
 				} else {
-					Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+//					Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
 					
 					selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
 					
@@ -365,12 +367,12 @@ public class Optimizer {
 					}
 					
 					return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-							Indexer.indexMapping.get(rightColumn.getWholeColumnName()), swappedExpression);
+							Indexer.indexMapping.get(rightColumn.getWholeColumnName()), anyJoinCondition);
 				}
 				
 			}
 			else if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
-				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+				//Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
 				
 				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
 				
@@ -379,9 +381,11 @@ public class Optimizer {
 				}
 				
 				return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), swappedExpression);
+						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), anyJoinCondition);
 			}
 			else if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
+				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+				
 				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
 				
 				if (selectExpression != null) {
@@ -389,7 +393,7 @@ public class Optimizer {
 				}
 				
 				return new LeftLinearIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
-						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), anyJoinCondition);
+						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), swappedExpression);
 			}
 			else if (anyJoinCondition instanceof EqualsTo) {
 				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);

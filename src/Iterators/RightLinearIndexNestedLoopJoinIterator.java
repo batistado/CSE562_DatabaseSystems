@@ -170,7 +170,7 @@ public class RightLinearIndexNestedLoopJoinIterator implements RAIterator {
 				leftIterator.getIteratorSchema());
 
 		joinOn = (BinaryExpression) joinCondition;
-		joinOn.setRightExpression(searchKey);
+		joinOn.setLeftExpression(searchKey);
 
 		List<TreeSearch> treeSearchObjects = utils.getSearchObject(joinOn);
 
