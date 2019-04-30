@@ -66,8 +66,14 @@ public class TableIterator implements RAIterator {
 
 			int i = 0;
 			for (String columnName : columns) {
-				BufferedReader br = new BufferedReader(
+				BufferedReader br = null;
+				if (columnName.lastIndexOf('.') != -1) {
+				br = new BufferedReader(
 						new FileReader(TEMP_DIR + "ColStore/" + table.getName() + "/" + columnName));
+				} else {
+				br = new BufferedReader(
+							new FileReader(TEMP_DIR + "ColStore/" + table.getName() + "/" + table.getName() + "." + columnName));
+				}
 
 				readers[i] = br;
 				i++;
@@ -128,7 +134,8 @@ public class TableIterator implements RAIterator {
 
 		int i = 0;
 		for (String columnName : columns) {
-			Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(columnName);
+			String col = columnName.lastIndexOf('.') != -1 ? columnName : table.getName() + "." + columnName;
+			Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(col);
 			fromSchema.addTuple(columnName, i, s.getDataType());
 			i++;
 		}
