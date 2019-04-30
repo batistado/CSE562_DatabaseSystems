@@ -71,13 +71,15 @@ public class Optimizer {
 			AggregationIterator iterator = (AggregationIterator) root;
 
 			return new AggregationIterator(optimizeRA(iterator.getRightIterator()), iterator.getSelectItems());
+		} else if (root instanceof InMemoryGroupByIterator) {
+			InMemoryGroupByIterator iterator = (InMemoryGroupByIterator) root;
+
+			return new InMemoryGroupByIterator(optimizeRA(iterator.getRightIterator()), iterator.getSelectItems());
+		} else if (root instanceof SortIterator) {
+			SortIterator iterator = (SortIterator) root;
+
+			return new SortIterator(optimizeRA(iterator.getRightIterator()), iterator.getOrderByElements());
 		}
-		
-//		else if (root instanceof InMemoryGroupByIterator) {
-//			InMemoryGroupByIterator iterator = (InMemoryGroupByIterator) root;
-//
-//			return new InMemoryGroupByIterator(optimizeRA(iterator.getRightIterator()), iterator.getSelectItems());
-//		}
 
 		else {
 			return root;

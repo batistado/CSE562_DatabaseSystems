@@ -75,7 +75,7 @@ public class QueryEvaluator {
 						new GroupByIterator(new Optimizer().optimizeRA(iterator), groupByColumns),
 						plainSelect.getSelectItems());
 			else
-				aggIterator = new InMemoryGroupByIterator(new Optimizer().optimizeRA(iterator),
+				aggIterator = new InMemoryGroupByIterator(iterator,
 						plainSelect.getSelectItems());
 			// RAIterator aggIterator = new AggregationIterator(new
 			// GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
@@ -108,7 +108,7 @@ public class QueryEvaluator {
 		if (orderByElements == null || orderByElements.isEmpty())
 			return iterator;
 
-		return new SortIterator(new Optimizer().optimizeRA(iterator), orderByElements);
+		return new SortIterator(iterator, orderByElements);
 		// return new SortIterator(iterator, orderByElements);
 	}
 
