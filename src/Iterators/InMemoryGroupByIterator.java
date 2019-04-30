@@ -52,6 +52,8 @@ public class InMemoryGroupByIterator implements RAIterator {
 	}
 
 	private void fillBuffer() {
+//		long startTime = System.nanoTime();
+		
 		while (rightIterator.hasNext()) {
 			String hash = "";
 
@@ -60,14 +62,13 @@ public class InMemoryGroupByIterator implements RAIterator {
 
 			for (Column groupByColumn : groupByColumns) {
 				PrimitiveValue val = utils.projectColumnValue(rightRow, groupByColumn, fromSchema);
-				hash += Integer.toString(val.hashCode());
+				hash += val.toString();
 				groupByValue.add(val);
 			}
 
 			if (!buffer.containsKey(hash)) {
 				ArrayList<Aggregate> currRow = new ArrayList<Aggregate>();
-
-				Aggregate[] tmp = new Aggregate[aggregateFunctions.size()];
+				
 				for (int i = 0; i < aggregateFunctions.size(); i++) {
 					Function aggregateFunction = aggregateFunctions.get(i);
 					Aggregate aggregateObject = aggregates.get(i);
@@ -77,31 +78,21 @@ public class InMemoryGroupByIterator implements RAIterator {
 					if (!aggregateFunction.isAllColumns()) {
 						functionExpression = aggregateFunction.getParameters().getExpressions().get(0);
 					}
-
-					switch (aggregateFunction.getName()) {
-					case "SUM":
+					
+					if (aggregateObject instanceof Sum) {
 						newObject = new Sum(aggregateObject.getDataType(), aggregateObject.getIndex(),
 								functionExpression);
-						break;
-
-					case "AVG":
+					} else if (aggregateObject instanceof Average) {
 						newObject = new Average(aggregateObject.getDataType(), aggregateObject.getIndex(),
 								functionExpression);
-						break;
-
-					case "MIN":
+					} else if (aggregateObject instanceof Min) {
 						newObject = new Min(aggregateObject.getDataType(), aggregateObject.getIndex(),
 								functionExpression);
-						break;
-
-					case "MAX":
+					} else if (aggregateObject instanceof Max) {
 						newObject = new Max(aggregateObject.getDataType(), aggregateObject.getIndex(),
 								functionExpression);
-						break;
-
-					case "COUNT":
+					} else {
 						newObject = new Count(aggregateObject.getIndex(), functionExpression);
-						break;
 					}
 
 					if (newObject.getExpression() != null) {
@@ -110,10 +101,9 @@ public class InMemoryGroupByIterator implements RAIterator {
 						// only for count
 						newObject.addValue(new LongValue(0));
 					}
-					tmp[i] = newObject;
+					currRow.add(newObject);
 				}
 
-				currRow.addAll(Arrays.asList(tmp));
 				buffer.put(hash, currRow);
 				groupByMapping.put(hash, groupByValue);
 			} else {
@@ -129,6 +119,10 @@ public class InMemoryGroupByIterator implements RAIterator {
 				}
 			}
 		}
+//		long endTime = System.nanoTime();
+//
+//		long duration = (endTime - startTime);
+//		System.out.println("fill buffer time: " + duration * 1/1000000000);
 	}
 
 	@Override
@@ -155,17 +149,29 @@ public class InMemoryGroupByIterator implements RAIterator {
 		
 		row = new ArrayList<PrimitiveValue>();
 		
-		PrimitiveValue[] tmp = new PrimitiveValue[totalColumns];
+		//PrimitiveValue[] tmp = new PrimitiveValue[totalColumns];
 		
 		for (Aggregate aggregate: aggregateRow) {
-			tmp[aggregate.getIndex()] = aggregate.getValue();
+			if (aggregate.getIndex() > row.size()) {
+				row.add(aggregate.getValue());
+			} else {
+			row.add(aggregate.getIndex(), aggregate.getValue());
+			}
+			//tmp[aggregate.getIndex()] = aggregate.getValue();
 		}
 		
 		for (int i = 0; i < groupByColumns.size(); i++) {
-			tmp[selectSchema.getSchemaByName(groupByColumns.get(i).getWholeColumnName()).getColumnIndex()] = groupByValue.get(i);
+			int idx = selectSchema.getSchemaByName(groupByColumns.get(i).getWholeColumnName()).getColumnIndex();
+			
+			if (idx > row.size()) {
+				row.add(groupByValue.get(i));
+			} else {
+			row.add(idx, groupByValue.get(i));
+			}
+			//tmp[selectSchema.getSchemaByName(groupByColumns.get(i).getWholeColumnName()).getColumnIndex()] = groupByValue.get(i);
 		}
 		
-		row.addAll(Arrays.asList(tmp));
+		//row.addAll(Arrays.asList(tmp));
 		
 		this.buffer.remove(hashKey);
 		this.groupByMapping.remove(hashKey);

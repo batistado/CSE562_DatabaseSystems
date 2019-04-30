@@ -45,17 +45,17 @@ public class SortIterator implements RAIterator{
 	
 	private void initializeReader() {
 		// TODO Auto-generated method stub
-		try {
-			if (Main.isInMemory) {
+//		try {
+//			if (Main.isInMemory) {
 				bufferIndex = -1;
-			} else {
-				buffer.clear();
-				reader = new BufferedReader(new FileReader(fileName));
-			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//			} else {
+//				buffer.clear();
+//				reader = new BufferedReader(new FileReader(fileName));
+//			}
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 	
 	public void pushDownSchema(RAIterator iterator) {
@@ -71,14 +71,14 @@ public class SortIterator implements RAIterator{
 	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
-		try {
+//		try {
 			if (isFirst) {
 				fileName = sort(rightIterator, orderByElements);
 				initializeReader();
 				isFirst = false;
 			}
 			
-			if (Main.isInMemory) {
+//			if (Main.isInMemory) {
 				if (++bufferIndex >= buffer.size()) {
 					row = null;
 					return false;
@@ -86,25 +86,25 @@ public class SortIterator implements RAIterator{
 				
 				row = buffer.get(bufferIndex);
 				return true;
-			}
+//			}
 			
-			while (reader != null && (line = reader.readLine()) != null) {
-				row = getLeftRow();
-				return true;
-			}
-			
-			if (reader != null) {
-				row = null;
-				reader.close();
-				reader = null;
-			}
-			return false;
-		
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
-		}
+//			while (reader != null && (line = reader.readLine()) != null) {
+//				row = getLeftRow();
+//				return true;
+//			}
+//			
+//			if (reader != null) {
+//				row = null;
+//				reader.close();
+//				reader = null;
+//			}
+//			return false;
+//		
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//			return false;
+//		}
 	}
 	
 	private ArrayList<PrimitiveValue> getLeftRow() {
