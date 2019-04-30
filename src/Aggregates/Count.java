@@ -42,9 +42,9 @@ public class Count implements Aggregate {
 	}
 
 	@Override
-	public String getDataType() {
+	public Integer getDataType() {
 		// TODO Auto-generated method stub
-		return "int";
+		return 2;
 	}
 }
 

@@ -196,22 +196,25 @@ public class RightLinearIndexNestedLoopJoinIterator implements RAIterator {
 		int j = 0;
 		ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
 		for (String x : row) {
-			String colDatatype = Main.tableSchemas.get(rightIterator.getTable().getName()).getSchemaByIndex(j)
+			Integer colDatatype = Main.tableSchemas.get(rightIterator.getTable().getName()).getSchemaByIndex(j)
 					.getDataType();
-			if (colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+			if(colDatatype == 1) {
 				StringValue val = new StringValue(x);
 				tmp.add(val);
-			} else if (colDatatype.equals("int")) {
+			}
+			else if(colDatatype == 2){
 				LongValue val = new LongValue(x);
 				tmp.add(val);
-			} else if (colDatatype.equals("decimal")) {
+			}
+			else if(colDatatype == 3) {
 				DoubleValue val = new DoubleValue(x);
 				tmp.add(val);
-			} else if (colDatatype.equals("date")) {
+			}
+			else if(colDatatype == 4){
 				DateValue val = new DateValue(x);
 				tmp.add(val);
 			}
-
+			
 			j++;
 
 		}

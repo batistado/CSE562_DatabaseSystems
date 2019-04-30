@@ -38,6 +38,12 @@ public class ProjectIterator implements RAIterator{
 	public List<SelectItem> getSelectItems() {
 		return this.selectItems;
 	}
+	
+	public void pushDownSchema(RAIterator iterator) {
+		this.rightIterator = iterator;
+		
+		setIteratorSchema();
+	}
 
 	@Override
 	public boolean hasNext() {
@@ -115,7 +121,7 @@ public class ProjectIterator implements RAIterator{
 			
 				SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
 				Expression expression = selectExpressionItem.getExpression();
-				String colName, colDatatype;
+				String colName; Integer colDatatype;
 				if (expression instanceof Column) {
 					Column column = (Column) expression;
 					colName = utils.getColumnName(selectExpressionItem, column.getWholeColumnName());

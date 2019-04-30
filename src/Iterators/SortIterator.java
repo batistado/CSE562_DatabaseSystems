@@ -25,15 +25,18 @@ public class SortIterator implements RAIterator{
 	private String fileName;
 	private ArrayList<ArrayList<PrimitiveValue>> buffer = null;
 	private Integer bufferIndex;
+	private boolean isFirst = true;
+	private List<OrderByElement> orderByElements;
 	
 	public SortIterator (RAIterator rightIterator, List<OrderByElement> orderByElements) {
 		this.rightIterator = rightIterator;
 		this.setIteratorSchema();
 		this.buffer = new ArrayList<ArrayList<PrimitiveValue>>();
-		
-		fileName = sort(rightIterator, orderByElements);
-		initializeReader();
-		//System.gc();
+		this.orderByElements = orderByElements;
+	}
+	
+	public List<OrderByElement> getOrderByElements() {
+		return this.orderByElements;
 	}
 	
 	public String sort(RAIterator rightIterator, List<OrderByElement> orderByElements) {
@@ -54,6 +57,12 @@ public class SortIterator implements RAIterator{
 			e.printStackTrace();
 		}
 	}
+	
+	public void pushDownSchema(RAIterator iterator) {
+		this.rightIterator = iterator;
+		
+		setIteratorSchema();
+	}
 
 	public void resetIterator() {
 		initializeReader();
@@ -63,6 +72,12 @@ public class SortIterator implements RAIterator{
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
 		try {
+			if (isFirst) {
+				fileName = sort(rightIterator, orderByElements);
+				initializeReader();
+				isFirst = false;
+			}
+			
 			if (Main.isInMemory) {
 				if (++bufferIndex >= buffer.size()) {
 					row = null;
@@ -98,23 +113,24 @@ public class SortIterator implements RAIterator{
 		int j = 0;
 		ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
 		for(String x : row) {
-			String colDatatype = fromSchema.getSchemaByIndex(j).getDataType();
-			if(colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+			Integer colDatatype = fromSchema.getSchemaByIndex(j).getDataType();
+			if(colDatatype == 1) {
 				StringValue val = new StringValue(x);
 				tmp.add(val);
 			}
-			else if(colDatatype.equals("int")){
+			else if(colDatatype == 2){
 				LongValue val = new LongValue(x);
 				tmp.add(val);
 			}
-			else if(colDatatype.equals("decimal")) {
+			else if(colDatatype == 3) {
 				DoubleValue val = new DoubleValue(x);
 				tmp.add(val);
 			}
-			else if(colDatatype.equals("date")){
+			else if(colDatatype == 4){
 				DateValue val = new DateValue(x);
 				tmp.add(val);
 			}
+			
 			j++;
 		}
 		

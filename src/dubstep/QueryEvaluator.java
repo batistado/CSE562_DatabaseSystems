@@ -200,45 +200,47 @@ public class QueryEvaluator {
 		if (where == null)
 			return fromIterator;
 
-		String colName = utils.getOneSideColumnName(where);
+//		String colName = utils.getOneSideColumnName(where);
+//
+//		if (Indexer.indexMapping.containsKey(colName)) {
+//			List<Position> positions = new ArrayList<Position>();
+//
+//			LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
+//
+//			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
+//
+//			if (treeSearchObjects == null) {
+//				return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
+//			}
+////				return new SelectIterator(fromIterator, where);
+//
+//			Position searchObject;
+//			for (TreeSearch treeSearchObject : treeSearchObjects) {
+//				if (treeSearchObject.operation.equals("EQUALS")) {
+//					searchObject = tree.search(treeSearchObject.leftValue);
+//
+//					if (searchObject != null) {
+//						positions.add(searchObject);
+//					}
+//
+//				} else {
+//					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
+//							treeSearchObject.rightValue, treeSearchObject.rightPolicy);
+//
+//					if (searchObject != null) {
+//						positions.add(searchObject);
+//					}
+//
+//				}
+//			}
+//
+//			if (!positions.isEmpty())
+//				return new LinearIndexIterator(fromTable, where, positions);
+//		}
+		
+		return new SelectIterator(fromIterator, where);
 
-		if (Indexer.indexMapping.containsKey(colName)) {
-			List<Position> positions = new ArrayList<Position>();
-
-			LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
-
-			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
-
-			if (treeSearchObjects == null) {
-				return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
-			}
-//				return new SelectIterator(fromIterator, where);
-
-			Position searchObject;
-			for (TreeSearch treeSearchObject : treeSearchObjects) {
-				if (treeSearchObject.operation.equals("EQUALS")) {
-					searchObject = tree.search(treeSearchObject.leftValue);
-
-					if (searchObject != null) {
-						positions.add(searchObject);
-					}
-
-				} else {
-					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
-							treeSearchObject.rightValue, treeSearchObject.rightPolicy);
-
-					if (searchObject != null) {
-						positions.add(searchObject);
-					}
-
-				}
-			}
-
-			if (!positions.isEmpty())
-				return new LinearIndexIterator(fromTable, where, positions);
-		}
-
-		return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
+		//return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
 	}
 	
 	

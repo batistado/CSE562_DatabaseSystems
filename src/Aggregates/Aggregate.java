@@ -8,6 +8,6 @@ public interface Aggregate {
 	public PrimitiveValue getValue();
 	public Integer getIndex();
 	public Expression getExpression();
-	public String getDataType();
+	public Integer getDataType();
 	public void resetAndAddValue(PrimitiveValue newValue);
 }

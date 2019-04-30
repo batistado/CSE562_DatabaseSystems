@@ -20,6 +20,12 @@ public class SelectIterator implements RAIterator{
 		//System.gc();
 	}
 	
+	public void pushDownSchema(RAIterator iterator) {
+		this.rightIterator = iterator;
+		
+		setIteratorSchema();
+	}
+	
 	public void resetIterator() {
 		rightIterator.resetIterator();
 	}

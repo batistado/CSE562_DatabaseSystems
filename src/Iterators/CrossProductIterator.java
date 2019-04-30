@@ -31,6 +31,13 @@ public class CrossProductIterator implements RAIterator{
 	public void resetProjection() {
 	}
 	
+	public void pushDownSchema(RAIterator leftIterator, RAIterator rightIterator) {
+		this.leftIterator = leftIterator;
+		this.rightIterator = rightIterator;
+		
+		setIteratorSchema();
+	}
+	
 	public void resetIterator() {
 		this.leftIterator.resetIterator();
 		this.rightIterator.resetIterator();

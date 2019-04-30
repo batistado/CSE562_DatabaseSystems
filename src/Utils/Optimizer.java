@@ -17,7 +17,7 @@ import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 
-public class Optimizer {
+public class Optimizer {	
 	public RAIterator optimizeRA(RAIterator root) {
 		if (root instanceof SelectIterator) {
 			SelectIterator selectIterator = (SelectIterator) root;
@@ -203,53 +203,54 @@ public class Optimizer {
 		Expression selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
 
 		if (selectExpression != null) {
-			String colName = utils.getOneSideColumnName(selectExpression);
-			// Check if it can use an index
-			if (rightIterator instanceof FromIterator) {
-
-				if (Indexer.indexMapping.containsKey(colName)) {
-					List<Position> positions = new ArrayList<Position>();
-					
-					LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
-					
-					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
-					
-					if (treeSearchObjects == null) {
-						rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
-					}
-					
-					Position searchObject;
-					for (TreeSearch treeSearchObject: treeSearchObjects) {
-						if (treeSearchObject.operation.equals("EQUALS")) {
-							searchObject = tree.search(treeSearchObject.leftValue);
-							
-							if (searchObject != null) {
-								positions.add(searchObject);
-							}
-							
-						} else {
-							searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy);
-							
-							if (searchObject != null) {
-								positions.add(searchObject);
-							}
-							
-						}
-					}
-					
-					if (!positions.isEmpty()) {
-						rightIterator = new LinearIndexIterator(((FromIterator)rightIterator).getTable(), selectExpression, positions);
-					} else {
-						rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
-					}
-					
-				} else {
-					rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
-				}
-			} 
-			else {
-				rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
-			}
+			rightIterator = new SelectIterator(rightIterator, selectExpression);
+//			String colName = utils.getOneSideColumnName(selectExpression);
+//			// Check if it can use an index
+//			if (rightIterator instanceof FromIterator) {
+//
+//				if (Indexer.indexMapping.containsKey(colName)) {
+//					List<Position> positions = new ArrayList<Position>();
+//					
+//					LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
+//					
+//					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
+//					
+//					if (treeSearchObjects == null) {
+//						rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
+//					}
+//					
+//					Position searchObject;
+//					for (TreeSearch treeSearchObject: treeSearchObjects) {
+//						if (treeSearchObject.operation.equals("EQUALS")) {
+//							searchObject = tree.search(treeSearchObject.leftValue);
+//							
+//							if (searchObject != null) {
+//								positions.add(searchObject);
+//							}
+//							
+//						} else {
+//							searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy);
+//							
+//							if (searchObject != null) {
+//								positions.add(searchObject);
+//							}
+//							
+//						}
+//					}
+//					
+//					if (!positions.isEmpty()) {
+//						rightIterator = new LinearIndexIterator(((FromIterator)rightIterator).getTable(), selectExpression, positions);
+//					} else {
+//						rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
+//					}
+//					
+//				} else {
+//					rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
+//				}
+//			} 
+//			else {
+//				rightIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)rightIterator, ((FromIterator)rightIterator).getTable());
+//			}
 		}
 
 		if (crossProductIterator.getLeftIterator() instanceof CrossProductIterator) {
@@ -259,12 +260,13 @@ public class Optimizer {
 			Expression anyJoinCondition = getJoinCondition(expressionList, leftIterator, rightIterator);
 
 			if (anyJoinCondition != null) {
-				Column col = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
-				if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(col.getWholeColumnName())) {
-					return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-							Indexer.indexMapping.get(col.getWholeColumnName()), anyJoinCondition);
-				}
-				else if (anyJoinCondition instanceof EqualsTo) {
+//				Column col = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
+//				if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(col.getWholeColumnName())) {
+//					return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
+//							Indexer.indexMapping.get(col.getWholeColumnName()), anyJoinCondition);
+//				}
+//				else 
+					if (anyJoinCondition instanceof EqualsTo) {
 					selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
 					
 					if (selectExpression != null) {
@@ -285,117 +287,120 @@ public class Optimizer {
 		selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
 
 		if (selectExpression != null) {
+			leftIterator = new SelectIterator(leftIterator, selectExpression);
+			
 			// Check if it can use an index
-			String colName = utils.getOneSideColumnName(selectExpression);
-			if (leftIterator instanceof FromIterator) {
-
-				if (Indexer.indexMapping.containsKey(colName)) {
-					List<Position> positions = new ArrayList<Position>();
-					
-					LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
-					
-					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
-					
-					if (treeSearchObjects == null) {
-						leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
-					}
-					
-					Position searchObject;
-					for (TreeSearch treeSearchObject: treeSearchObjects) {
-						if (treeSearchObject.operation.equals("EQUALS")) {
-							searchObject = tree.search(treeSearchObject.leftValue);
-							
-							if (searchObject != null) {
-								positions.add(searchObject);
-							}
-							
-						} else {
-							searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy);
-							
-							if (searchObject != null) {
-								positions.add(searchObject);
-							}
-							
-						}
-					}
-					
-					if (!positions.isEmpty()) {
-						leftIterator = new LinearIndexIterator(((FromIterator)leftIterator).getTable(), selectExpression, positions);
-					} else {
-						leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
-					}
-					
-				} else {
-					leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
-				}
-			} else {
-				leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
-			}
+//			String colName = utils.getOneSideColumnName(selectExpression);
+//			if (leftIterator instanceof FromIterator) {
+//
+//				if (Indexer.indexMapping.containsKey(colName)) {
+//					List<Position> positions = new ArrayList<Position>();
+//					
+//					LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
+//					
+//					List<TreeSearch> treeSearchObjects = utils.getSearchObject(selectExpression);
+//					
+//					if (treeSearchObjects == null) {
+//						leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
+//					}
+//					
+//					Position searchObject;
+//					for (TreeSearch treeSearchObject: treeSearchObjects) {
+//						if (treeSearchObject.operation.equals("EQUALS")) {
+//							searchObject = tree.search(treeSearchObject.leftValue);
+//							
+//							if (searchObject != null) {
+//								positions.add(searchObject);
+//							}
+//							
+//						} else {
+//							searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy, treeSearchObject.rightValue, treeSearchObject.rightPolicy);
+//							
+//							if (searchObject != null) {
+//								positions.add(searchObject);
+//							}
+//							
+//						}
+//					}
+//					
+//					if (!positions.isEmpty()) {
+//						leftIterator = new LinearIndexIterator(((FromIterator)leftIterator).getTable(), selectExpression, positions);
+//					} else {
+//						leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
+//					}
+//					
+//				} else {
+//					leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
+//				}
+//			} else {
+//				leftIterator = utils.checkAndAddSecondaryIndex(colName, selectExpression, (FromIterator)leftIterator, ((FromIterator)leftIterator).getTable());
+//			}
 		}
 		
 		Expression anyJoinCondition = getJoinCondition(expressionList, leftIterator, rightIterator);
 
 		if (anyJoinCondition != null) {
-			Column leftColumn = (Column) ((BinaryExpression) anyJoinCondition).getLeftExpression();
-			Column rightColumn = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
-			
-			if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName()) && leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
-				String leftTableName = ((FromIterator) leftIterator).getTable().getName();
-				String rightTableName = ((FromIterator) rightIterator).getTable().getName();
-				
-				Integer leftCount = Indexer.tableSizeMapping.get(leftTableName);
-				Integer rightCount = Indexer.tableSizeMapping.get(rightTableName);
-				
-				if (leftCount > rightCount) {
-					Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
-					
-					selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
-					
-					if (selectExpression != null) {
-						rightIterator = new SelectIterator(rightIterator, selectExpression);
-					}
-					
-					return new LeftLinearIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
-							Indexer.indexMapping.get(leftColumn.getWholeColumnName()), swappedExpression);
-				} else {
+//			Column leftColumn = (Column) ((BinaryExpression) anyJoinCondition).getLeftExpression();
+//			Column rightColumn = (Column) ((BinaryExpression) anyJoinCondition).getRightExpression();
+//			
+//			if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName()) && leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
+//				String leftTableName = ((FromIterator) leftIterator).getTable().getName();
+//				String rightTableName = ((FromIterator) rightIterator).getTable().getName();
+//				
+//				Integer leftCount = Indexer.tableSizeMapping.get(leftTableName);
+//				Integer rightCount = Indexer.tableSizeMapping.get(rightTableName);
+//				
+//				if (leftCount > rightCount) {
 //					Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
-					
-					selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
-					
-					if (selectExpression != null) {
-						leftIterator = new SelectIterator(leftIterator, selectExpression);
-					}
-					
-					return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-							Indexer.indexMapping.get(rightColumn.getWholeColumnName()), anyJoinCondition);
-				}
-				
-			}
-			else if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
-				//Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
-				
-				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
-				
-				if (selectExpression != null) {
-					leftIterator = new SelectIterator(leftIterator, selectExpression);
-				}
-				
-				return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
-						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), anyJoinCondition);
-			}
-			else if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
-				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
-				
-				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
-				
-				if (selectExpression != null) {
-					rightIterator = new SelectIterator(rightIterator, selectExpression);
-				}
-				
-				return new LeftLinearIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
-						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), swappedExpression);
-			}
-			else if (anyJoinCondition instanceof EqualsTo) {
+//					
+//					selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
+//					
+//					if (selectExpression != null) {
+//						rightIterator = new SelectIterator(rightIterator, selectExpression);
+//					}
+//					
+//					return new LeftLinearIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
+//							Indexer.indexMapping.get(leftColumn.getWholeColumnName()), swappedExpression);
+//				} else {
+////					Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+//					
+//					selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
+//					
+//					if (selectExpression != null) {
+//						leftIterator = new SelectIterator(leftIterator, selectExpression);
+//					}
+//					
+//					return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
+//							Indexer.indexMapping.get(rightColumn.getWholeColumnName()), anyJoinCondition);
+//				}
+//				
+//			}
+//			else if (rightIterator instanceof FromIterator && Indexer.indexMapping.containsKey(rightColumn.getWholeColumnName())) {
+//				//Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+//				
+//				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
+//				
+//				if (selectExpression != null) {
+//					leftIterator = new SelectIterator(leftIterator, selectExpression);
+//				}
+//				
+//				return new RightLinearIndexNestedLoopJoinIterator((FromIterator) rightIterator, leftIterator,
+//						Indexer.indexMapping.get(rightColumn.getWholeColumnName()), anyJoinCondition);
+//			}
+//			else if (leftIterator instanceof FromIterator && Indexer.indexMapping.containsKey(leftColumn.getWholeColumnName())) {
+//				Expression swappedExpression = utils.swapLeftRightExpression(anyJoinCondition);
+//				
+//				selectExpression = getIteratorSpecificCondition(expressionList, rightIterator);
+//				
+//				if (selectExpression != null) {
+//					rightIterator = new SelectIterator(rightIterator, selectExpression);
+//				}
+//				
+//				return new LeftLinearIndexNestedLoopJoinIterator((FromIterator) leftIterator, rightIterator,
+//						Indexer.indexMapping.get(leftColumn.getWholeColumnName()), swappedExpression);
+//			}
+//			else 
+				if (anyJoinCondition instanceof EqualsTo) {
 				selectExpression = getIteratorSpecificCondition(expressionList, leftIterator);
 				
 				if (selectExpression != null) {

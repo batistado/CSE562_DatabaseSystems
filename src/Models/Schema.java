@@ -8,10 +8,10 @@ public class Schema implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 	private Integer columnIndex;
-	private String dataType;
+	private Integer dataType;
 	private String columnName;
 	
-	public Schema(String dataType, Integer columnIndex, String columnName) {
+	public Schema(Integer dataType, Integer columnIndex, String columnName) {
 		this.columnIndex = columnIndex;
 		this.dataType = dataType;
 		this.columnName = columnName;
@@ -33,11 +33,11 @@ public class Schema implements Serializable {
 		this.columnIndex = columnIndex;
 	}
 
-	public String getDataType() {
+	public Integer getDataType() {
 		return dataType;
 	}
 
-	public void setDataType(String dataType) {
+	public void setDataType(Integer dataType) {
 		this.dataType = dataType;
 	}
 

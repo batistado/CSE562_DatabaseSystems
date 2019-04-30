@@ -129,7 +129,7 @@ public class Sort {
 			sortedRows = new ArrayList<ArrayList<PrimitiveValue>>();
 			//System.gc();
 		}
-		System.gc();
+		//System.gc();
 		//return null;
 		return mergeFiles(tempFiles, orderByElements, fromSchema);
 
@@ -247,17 +247,20 @@ public class Sort {
 				int i = 0;
 				ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
 				for (String word : unSplittedLine.split("\\|")) {
-					String colDatatype = fromSchema.getSchemaByIndex(i).getDataType();
-					if (colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+					Integer colDatatype = fromSchema.getSchemaByIndex(i).getDataType();
+					if(colDatatype == 1) {
 						StringValue val = new StringValue(word);
 						tmp.add(val);
-					} else if (colDatatype.equals("int")) {
+					}
+					else if(colDatatype == 2){
 						LongValue val = new LongValue(word);
 						tmp.add(val);
-					} else if (colDatatype.equals("decimal")) {
+					}
+					else if(colDatatype == 3) {
 						DoubleValue val = new DoubleValue(word);
 						tmp.add(val);
-					} else if (colDatatype.equals("date")) {
+					}
+					else if(colDatatype == 4){
 						DateValue val = new DateValue(word);
 						tmp.add(val);
 					}

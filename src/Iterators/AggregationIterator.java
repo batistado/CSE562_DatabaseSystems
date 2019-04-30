@@ -182,7 +182,7 @@ public class AggregationIterator implements RAIterator{
 		for (SelectItem selectItem: selectItems) {
 			SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
 			Expression expression = selectExpressionItem.getExpression();
-			String colName, colDatatype;
+			String colName; Integer colDatatype;
 			if (expression instanceof Column) {
 				Column column = (Column) expression;
 				colName = utils.getColumnName(selectExpressionItem, column.getWholeColumnName());
@@ -197,7 +197,7 @@ public class AggregationIterator implements RAIterator{
 				Expression functionExpression = null;
 				
 				if (aggregateFunction.isAllColumns()) {
-					colDatatype = "int";
+					colDatatype = 2;
 				} else {
 					functionExpression = aggregateFunction.getParameters().getExpressions().get(0);
 					if (functionExpression instanceof Column) {
@@ -207,7 +207,7 @@ public class AggregationIterator implements RAIterator{
 						BinaryExpression binaryExpression = (BinaryExpression) functionExpression;
 						colDatatype = utils.getExpressionColumnDatatype(binaryExpression, fromSchema);
 					} else {
-						colDatatype = "int";
+						colDatatype = 2;
 					}
 				}
 				

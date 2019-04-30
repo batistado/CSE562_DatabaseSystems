@@ -22,6 +22,7 @@ import Models.TupleSchema;
 import dubstep.Main;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.CaseExpression;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
@@ -29,6 +30,7 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.WhenClause;
 import net.sf.jsqlparser.expression.PrimitiveValue.InvalidPrimitive;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -44,6 +46,46 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 public class utils {
+	public static void getColumnNamesFromExpression(Expression expression, List<String> colNames) {
+		if (expression == null)
+			return;
+		
+		if (expression instanceof Column) {
+			Column col = (Column) expression;
+			colNames.add(col.getWholeColumnName());
+			return;
+		}
+		
+		if (expression instanceof BinaryExpression) {
+			BinaryExpression binaryExpression = (BinaryExpression) expression;
+			
+			getColumnNamesFromExpression(binaryExpression.getLeftExpression(), colNames);
+			getColumnNamesFromExpression(binaryExpression.getRightExpression(), colNames);
+		}
+		
+		if (expression instanceof CaseExpression) {
+			CaseExpression caseExpression = (CaseExpression) expression;
+			
+			List<WhenClause> whenClauses = caseExpression.getWhenClauses();
+			
+			for (WhenClause whenClause: whenClauses) {
+				Expression exp = whenClause.getWhenExpression();
+				getColumnNamesFromExpression(exp, colNames);
+			}
+		}
+		
+		if (expression instanceof Function) {
+			Function function = (Function) expression;
+			
+			if (function.getParameters() != null) {
+			for (Expression fExpression: function.getParameters().getExpressions()) {
+				getColumnNamesFromExpression(fExpression, colNames);
+			}
+			}
+		}
+		
+	}
+	
 	public static RAIterator checkAndAddSecondaryIndex(String colName, Expression where, FromIterator fromIterator, Table fromTable) {
 		if (Indexer.secondaryIndexMapping.containsKey(colName)) {
 			List<Position> positions = new ArrayList<Position>();
@@ -154,20 +196,20 @@ public class utils {
 		TupleSchema ts = Main.tableSchemas.get(table.getName());
 		
 		for(String x : row) {
-			String colDatatype = ts.getSchemaByIndex(j).getDataType();
-			if(colDatatype.equals("string") || colDatatype.equals("varchar") || colDatatype.equals("char")) {
+			Integer colDatatype = ts.getSchemaByIndex(j).getDataType();
+			if(colDatatype == 1) {
 				StringValue val = new StringValue(x);
 				tmp.add(val);
 			}
-			else if(colDatatype.equals("int")){
+			else if(colDatatype == 2){
 				LongValue val = new LongValue(x);
 				tmp.add(val);
 			}
-			else if(colDatatype.equals("decimal")) {
+			else if(colDatatype == 3) {
 				DoubleValue val = new DoubleValue(x);
 				tmp.add(val);
 			}
-			else if(colDatatype.equals("date")){
+			else if(colDatatype == 4){
 				DateValue val = new DateValue(x);
 				tmp.add(val);
 			}
@@ -262,7 +304,7 @@ public class utils {
         return saltStr;
     }
 	
-	public static String getExpressionColumnDatatype(BinaryExpression binaryExpression, TupleSchema fromSchema) {
+	public static Integer getExpressionColumnDatatype(BinaryExpression binaryExpression, TupleSchema fromSchema) {
 		Expression leftExpression = binaryExpression.getLeftExpression();
 		if (leftExpression instanceof Column) {
 			Column column = (Column) leftExpression;
@@ -273,15 +315,15 @@ public class utils {
 			switch(pt.name()) 
 	        { 
 	            case "LONG": 
-	                return "int"; 
+	                return 2; 
 	            case "STRING": 
-	            	return "varchar"; 
+	            	return 1; 
 	            case "DOUBLE": 
-	                return "decimal";
+	                return 3;
 	            case "DATE":
-	            	return "date";
+	            	return 4;
 	            default: 
-	                return "varchar"; 
+	                return 1; 
 	        } 
 		}
 		

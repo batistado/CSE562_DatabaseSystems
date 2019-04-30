@@ -15,13 +15,13 @@ public class Min implements Aggregate {
 	private PrimitiveType type;
 	private Integer index;
 	private Expression expression;
-	private String stringType;
+	private Integer stringType;
 
-	public Min(String type, Integer index, Expression expression) {
-		if (type.equals("int")) {
+	public Min(Integer type, Integer index, Expression expression) {
+		if (type == 2) {
 			accumulator = new LongValue(Long.MAX_VALUE);
 			this.type = PrimitiveType.LONG;
-		} else if (type.equals("date")) {
+		} else if (type == 4) {
 			accumulator = new DateValue("Sun Aug 17 12:42:55 IST 292278994");
 			this.type = PrimitiveType.DATE;
 		}
@@ -91,7 +91,7 @@ public class Min implements Aggregate {
 	}
 	
 	@Override
-	public String getDataType() {
+	public Integer getDataType() {
 		// TODO Auto-generated method stub
 		return stringType;
 	}

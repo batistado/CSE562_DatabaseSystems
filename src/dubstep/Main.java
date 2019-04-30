@@ -37,7 +37,6 @@ public class Main {
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
-		System.setProperty("XX", "+UseParallelGC");
 		isInMemory = false;
 		
 		for (String arg : args) {
@@ -46,14 +45,14 @@ public class Main {
 	        }
 		}
 		
-		Indexer.tableSizeMapping.put("LINEITEM", 6001215);
-		Indexer.tableSizeMapping.put("ORDERS", 1500000);
-		Indexer.tableSizeMapping.put("CUSTOMER", 150000);
-		Indexer.tableSizeMapping.put("REGION", 5);
-		Indexer.tableSizeMapping.put("NATION", 25);
-		Indexer.tableSizeMapping.put("SUPPLIER", 10000);
-		Indexer.tableSizeMapping.put("PART", 200000);
-		Indexer.tableSizeMapping.put("PARTSUPP", 800000);
+//		Indexer.tableSizeMapping.put("LINEITEM", 6001215);
+//		Indexer.tableSizeMapping.put("ORDERS", 1500000);
+//		Indexer.tableSizeMapping.put("CUSTOMER", 150000);
+//		Indexer.tableSizeMapping.put("REGION", 5);
+//		Indexer.tableSizeMapping.put("NATION", 25);
+//		Indexer.tableSizeMapping.put("SUPPLIER", 10000);
+//		Indexer.tableSizeMapping.put("PART", 200000);
+//		Indexer.tableSizeMapping.put("PARTSUPP", 800000);
 		//10000
 		
 		
@@ -64,17 +63,17 @@ public class Main {
 	        directory.mkdir();
 	    }
 	    
-	    // Check and make a Index dir
- 		directory = new File(RAIterator.TEMP_DIR + "Indexes/");
+	    //Check and make a ColStore dir
+ 		directory = new File(RAIterator.TEMP_DIR + "ColStore/");
  	    if (!directory.exists()){
  	        directory.mkdir();
  	    }
- 	    
- 	    // Check and make a Secondary Index dir
- 		directory = new File(RAIterator.TEMP_DIR + "SecondaryIndexes/");
- 	    if (!directory.exists()){
- 	        directory.mkdir();
- 	    }
+// 	    
+// 	    // Check and make a Secondary Index dir
+// 		directory = new File(RAIterator.TEMP_DIR + "SecondaryIndexes/");
+// 	    if (!directory.exists()){
+// 	        directory.mkdir();
+// 	    }
 		
 		CCJSqlParser parser;
 		
@@ -92,7 +91,6 @@ public class Main {
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
 				}
-				System.gc();
 				System.out.println("$> ");
 				parser = new CCJSqlParser(System.in);
 			}
@@ -111,7 +109,8 @@ public class Main {
 		}
 		
 		tableSchemas.put(table.getTable().getName(), ts);
-		Indexer.addIndexes(table);
+		ColStore.makeColStore(table);
+		//Indexer.addIndexes(table);
 		writeSchemaToDisk();
 	}
 	
@@ -141,7 +140,7 @@ public class Main {
 				tableSchemas = (Map<String, TupleSchema>) ois.readObject();
 				ois.close();
 				
-				Indexer.loadIndex();
+				//Indexer.loadIndex();
 				//Indexer.loadSecondaryIndex();
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
@@ -154,7 +153,9 @@ public class Main {
 			}
 		}
 		
-		return new Optimizer().optimizeRA(new QueryEvaluator().evaluateQuery(selectQuery));
+		RAIterator iterator = new QueryEvaluator().evaluateQuery(selectQuery);
+		RAIterator resultIterator = new Optimizer().optimizeRA(iterator);
+		return ProjectionPushDown.pushDown(resultIterator, new ArrayList<String>());
 		//return new QueryEvaluator().evaluateQuery(selectQuery);
 	}
 	

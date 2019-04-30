@@ -12,10 +12,10 @@ public class Sum implements Aggregate {
 	private PrimitiveType type;
 	private Integer index;
 	private Expression expression;
-	private String stringType;
+	private Integer stringType;
 
-	public Sum(String type, Integer index, Expression expression) {
-		if (type.equals("int")) {
+	public Sum(Integer type, Integer index, Expression expression) {
+		if (type == 2) {
 			accumulator = new LongValue(0);
 			this.type = PrimitiveType.LONG;
 		} else {
@@ -78,7 +78,7 @@ public class Sum implements Aggregate {
 	}
 	
 	@Override
-	public String getDataType() {
+	public Integer getDataType() {
 		// TODO Auto-generated method stub
 		return stringType;
 	}

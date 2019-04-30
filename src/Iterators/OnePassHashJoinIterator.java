@@ -22,6 +22,7 @@ public class OnePassHashJoinIterator implements RAIterator{
 	private Expression joinCondition;
 	private Map<PrimitiveValue, ArrayList<ArrayList<PrimitiveValue>>> joinMap;
 	private LinkedList<ArrayList<PrimitiveValue>> buffer;
+	private boolean isFirst = true;
 	
 	public OnePassHashJoinIterator (RAIterator leftIterator, RAIterator rightIterator, Expression joinCondition) {
 		this.joinMap = new HashMap<PrimitiveValue, ArrayList<ArrayList<PrimitiveValue>>>();
@@ -30,12 +31,17 @@ public class OnePassHashJoinIterator implements RAIterator{
 		this.leftIterator = leftIterator;
 		this.rightIterator = rightIterator;
 		this.setIteratorSchema();
-		this.initializeIterator();
-		//System.gc();
 	}
 	
 	public Expression getExpression() {
 		return this.joinCondition;
+	}
+	
+	public void pushDownSchema(RAIterator leftIterator, RAIterator rightIterator) {
+		this.leftIterator = leftIterator;
+		this.rightIterator = rightIterator;
+		
+		setIteratorSchema();
 	}
 	
 	public void initializeIterator() {
@@ -66,6 +72,11 @@ public class OnePassHashJoinIterator implements RAIterator{
 	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub
+		if (isFirst) {
+			this.initializeIterator();
+			isFirst = false;
+		}
+		
 		if (joinMap.isEmpty())
 			return false;
 		
@@ -97,7 +108,6 @@ public class OnePassHashJoinIterator implements RAIterator{
 			}
 		}
 		
-		System.gc();
 		return false;
 	}
 
