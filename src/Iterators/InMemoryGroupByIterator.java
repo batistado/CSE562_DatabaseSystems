@@ -52,8 +52,6 @@ public class InMemoryGroupByIterator implements RAIterator {
 	}
 
 	private void fillBuffer() {
-//		long startTime = System.nanoTime();
-		
 		while (rightIterator.hasNext()) {
 			String hash = "";
 
@@ -62,7 +60,7 @@ public class InMemoryGroupByIterator implements RAIterator {
 
 			for (Column groupByColumn : groupByColumns) {
 				PrimitiveValue val = utils.projectColumnValue(rightRow, groupByColumn, fromSchema);
-				hash += val.toString();
+				hash += Integer.toString(val.hashCode());
 				groupByValue.add(val);
 			}
 
@@ -112,6 +110,7 @@ public class InMemoryGroupByIterator implements RAIterator {
 				for (Aggregate aggregate : currRow) {
 					if (aggregate.getExpression() != null) {
 						aggregate.addValue(utils.projectColumnValue(rightRow, aggregate.getExpression(), fromSchema));
+						//aggregate.addValue(new LongValue(0));
 					} else {
 						// only for count
 						aggregate.addValue(new LongValue(0));
@@ -119,10 +118,6 @@ public class InMemoryGroupByIterator implements RAIterator {
 				}
 			}
 		}
-//		long endTime = System.nanoTime();
-//
-//		long duration = (endTime - startTime);
-//		System.out.println("fill buffer time: " + duration * 1/1000000000);
 	}
 
 	@Override

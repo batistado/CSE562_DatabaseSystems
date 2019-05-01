@@ -362,7 +362,9 @@ public class utils {
 	}
 	
 	public static String getDate(Function f) {
-		return f.getParameters().getExpressions().get(0).toString();
+		StringValue v = (StringValue) f.getParameters().getExpressions().get(0);
+		
+		return v.getValue();
 	}
 	
 	public static String getFunctionName(Function f) {
@@ -640,7 +642,7 @@ public class utils {
 			public PrimitiveValue eval(Function function) throws SQLException {
 				if (function.getName().equals("DATE")) {
 					String dateString = getDate(function);
-					return new DateValue(dateString.substring(1, dateString.length() - 1));
+					return new DateValue(dateString);
 				}
 				
 				int colID = tupleSchema.getSchemaByName(getFunctionName(function)).getColumnIndex();
