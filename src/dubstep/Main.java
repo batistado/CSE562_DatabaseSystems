@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +35,7 @@ public class Main {
 	public static int sortedRunSize = 2;
 	public static int sortBufferSize = 100000;
 	public static int offset = 1;
+	public static EvalClass evalObj = new EvalClass();
 	
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
@@ -83,12 +85,12 @@ public class Main {
 		try {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
-//					long startTime = System.nanoTime();
+					long startTime = System.nanoTime();
 					Select selectQuery = (Select) queryStatement;
 					RAIterator queryIterator = evaluateQuery(selectQuery);
 					printer(queryIterator);
-//					long endTime = System.nanoTime();
-//					System.out.println("Query time: " + (endTime - startTime) * 1/1000000000);
+					long endTime = System.nanoTime();
+					System.out.println("Query time: " + (endTime - startTime) * 1.0/1000000000);
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
@@ -157,7 +159,8 @@ public class Main {
 		
 		RAIterator iterator = new QueryEvaluator().evaluateQuery(selectQuery);
 		RAIterator resultIterator = new Optimizer().optimizeRA(iterator);
-		return ProjectionPushDown.pushDown(resultIterator, new ArrayList<String>());
+		return ProjectionPushDown.pushDown(resultIterator, new HashSet<String>());
+		//return resultIterator;
 		//return new QueryEvaluator().evaluateQuery(selectQuery);
 	}
 	

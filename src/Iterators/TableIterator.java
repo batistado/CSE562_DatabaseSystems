@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import Models.Schema;
@@ -96,36 +97,87 @@ public class TableIterator implements RAIterator {
 	}
 
 	public ArrayList<PrimitiveValue> getRow() {
-		try {
 			int i = 0;
-			String line = "";
+			String line;
 			ArrayList<PrimitiveValue> tmp = new ArrayList<PrimitiveValue>();
+//			PrimitiveValue[] arr = new PrimitiveValue[columns.size()];
+//			List<Thread> threads = new ArrayList<Thread>();
 			for (BufferedReader br : readers) {
-				if ((line = br.readLine()) != null) {
-					int colDatatype = fromSchema.getSchemaByIndex(i).getDataType();
-					if (colDatatype == 1) {
-						StringValue val = new StringValue(line);
-						tmp.add(val);
-					} else if (colDatatype == 2) {
-						LongValue val = new LongValue(line);
-						tmp.add(val);
-					} else if (colDatatype == 3) {
-						DoubleValue val = new DoubleValue(line);
-						tmp.add(val);
-					} else if (colDatatype == 4) {
-						DateValue val = new DateValue(line);
-						tmp.add(val);
+//				int index = i;
+//				Thread thread = new Thread(new Runnable() {
+//				    @Override
+//				    public void run() {
+//				        readRow(br, index, arr);
+//				    }
+//				});
+//				threads.add(thread);
+//				thread.start();
+//				i++;
+		
+				try {
+					if ((line = br.readLine()) != null) {
+						int colDatatype = fromSchema.getSchemaByIndex(i).getDataType();
+						if (colDatatype == 1) {
+							StringValue val = new StringValue(line);
+							tmp.add(val);
+						} else if (colDatatype == 2) {
+							LongValue val = new LongValue(line);
+							tmp.add(val);
+						} else if (colDatatype == 3) {
+							DoubleValue val = new DoubleValue(line);
+							tmp.add(val);
+						} else if (colDatatype == 4) {
+							DateValue val = new DateValue(line);
+							tmp.add(val);
+						}
+						i++;
+					} else {
+						return null;
 					}
-					i++;
-				} else {
-					return null;
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
+//			
+//			for (Thread thread: threads) {
+//				try {
+//					thread.join();
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//			
+//			//System.out.println(arr.toString());
+//			if (arr[0] != null)
+//				tmp.addAll(Arrays.asList(arr));
+//			else
+//				return null;
 
 			return tmp;
+	}
+	
+	public void readRow(BufferedReader reader, int index, PrimitiveValue[] arr) {
+		String line;
+		try {
+			if ((line = reader.readLine()) != null) {
+				int colDatatype = fromSchema.getSchemaByIndex(index).getDataType();
+				if (colDatatype == 1) {
+					arr[index] = new StringValue(line);
+				} else if (colDatatype == 2) {
+					arr[index] = new LongValue(line);
+				} else if (colDatatype == 3) {
+					arr[index] = new DoubleValue(line);
+				} else if (colDatatype == 4) {
+					arr[index] = new DateValue(line);
+				} else {
+					arr[index] = null;
+				}
+			}
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return null;
 		}
 	}
 

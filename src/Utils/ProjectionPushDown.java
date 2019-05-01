@@ -11,7 +11,7 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class ProjectionPushDown {
-	public static RAIterator pushDown(RAIterator root, List<String> columnNames) {
+	public static RAIterator pushDown(RAIterator root, HashSet<String> columnNames) {
 		if (root instanceof ProjectIterator) {
 			ProjectIterator iterator = (ProjectIterator) root;
 			List<SelectItem> selectItems = iterator.getSelectItems();

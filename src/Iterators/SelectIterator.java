@@ -39,7 +39,7 @@ public class SelectIterator implements RAIterator{
 		// TODO Auto-generated method stub
 		while (rightIterator.hasNext()) {
 			row = rightIterator.next();
-			if (where == null || utils.filterRow(row, where, fromSchema))
+			if (utils.filterRow(row, where, fromSchema))
 				return true;
 		}
 		

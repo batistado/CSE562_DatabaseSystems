@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
@@ -46,7 +47,7 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 public class utils {
-	public static void getColumnNamesFromExpression(Expression expression, List<String> colNames) {
+	public static void getColumnNamesFromExpression(Expression expression, HashSet<String> colNames) {
 		if (expression == null)
 			return;
 		
@@ -344,21 +345,11 @@ public class utils {
 	}
 	
 	public static PrimitiveValue projectColumnValue(ArrayList<PrimitiveValue> row, Expression expression, TupleSchema tupleSchema){
-		Eval eval = new Eval() {
-			@Override
-			public PrimitiveValue eval(Column col) throws SQLException {
-				int colID = tupleSchema.getSchemaByName(getColumnName(col)).getColumnIndex();
-				return row.get(colID);
-			}
-		};
+		Main.evalObj.setRow(row);
+		Main.evalObj.setExpression(expression);
+		Main.evalObj.setTupleSchema(tupleSchema);
 		
-		try {
-			return eval.eval(expression);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
+		return Main.evalObj.projectColumnValue();
 	}
 	
 	public static String getDate(Function f) {
@@ -631,31 +622,11 @@ public class utils {
 	}
 	
 	public static Boolean filterRow(ArrayList<PrimitiveValue> unfilteredRow, Expression expression, TupleSchema tupleSchema){
-		Eval eval = new Eval() {
-			@Override
-			public PrimitiveValue eval(Column col) throws SQLException {
-				int colID = tupleSchema.getSchemaByName(getColumnName(col)).getColumnIndex();
-				return unfilteredRow.get(colID);
-			}
-			
-			@Override
-			public PrimitiveValue eval(Function function) throws SQLException {
-				if (function.getName().equals("DATE")) {
-					String dateString = getDate(function);
-					return new DateValue(dateString);
-				}
-				
-				int colID = tupleSchema.getSchemaByName(getFunctionName(function)).getColumnIndex();
-				return unfilteredRow.get(colID);
-			}
-		};
+		Main.evalObj.setRow(unfilteredRow);
+		Main.evalObj.setExpression(expression);
+		Main.evalObj.setTupleSchema(tupleSchema);
 		
-		try {
-			return eval.eval(expression).toBool();
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return null;
-		}
+		return Main.evalObj.filterRow();
 		
 	}
 	
