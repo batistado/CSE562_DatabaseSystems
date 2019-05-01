@@ -85,12 +85,12 @@ public class Main {
 		try {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
-					long startTime = System.nanoTime();
+//					long startTime = System.nanoTime();
 					Select selectQuery = (Select) queryStatement;
 					RAIterator queryIterator = evaluateQuery(selectQuery);
 					printer(queryIterator);
-					long endTime = System.nanoTime();
-					System.out.println("Query time: " + (endTime - startTime) * 1.0/1000000000);
+//					long endTime = System.nanoTime();
+//					System.out.println("Query time: " + (endTime - startTime) * 1.0/1000000000);
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
