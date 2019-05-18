@@ -31,12 +31,14 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
+import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.Select;
 
 public class Main {
 	public static Map<String, TupleSchema> tableSchemas = new HashMap<>();
 	public static Map<String, ArrayList<ArrayList<PrimitiveValue>>> inserts = new HashMap<>();
+	public static Map<String, ArrayList<Expression>> deletes = new HashMap<>();
 	public static boolean isInMemory;
 	public static int sortedRunSize = 2;
 	public static int sortBufferSize = 100000;
@@ -102,6 +104,8 @@ public class Main {
 					createTable((CreateTable) queryStatement);
 				} else if (queryStatement instanceof Insert) {
 					insertQuery((Insert) queryStatement);
+				} else if (queryStatement instanceof Delete) {
+					deleteQuery((Delete) queryStatement);
 				}
 				System.out.println("$> ");
 				parser = new CCJSqlParser(System.in);
@@ -199,6 +203,19 @@ public class Main {
 			ArrayList<ArrayList<PrimitiveValue>> rows = new ArrayList<>();
 			rows.add(rowList);
 			inserts.put(tableName, rows);
+		}
+	}
+	
+	public static void deleteQuery(Delete deleteQuery) {
+		String tableName = deleteQuery.getTable().getName();
+		
+		if (deletes.containsKey(tableName)) {	
+			deletes.get(tableName).add(deleteQuery.getWhere());
+		} else {
+			ArrayList<Expression> deleteConditions = new ArrayList<>();
+			deleteConditions.add(deleteQuery.getWhere());
+			
+			deletes.put(tableName, deleteConditions);
 		}
 	}
 	

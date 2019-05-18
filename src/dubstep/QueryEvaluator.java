@@ -29,9 +29,13 @@ import Iterators.SubQueryIterator;
 import Iterators.UnionIterator;
 import Utils.Optimizer;
 import Utils.utils;
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.InverseExpression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -198,6 +202,7 @@ public class QueryEvaluator {
 	public RAIterator evaluateFromTable(Table fromTable, Expression where) {
 		FromIterator fromIterator = new FromIterator(fromTable);
 		RAIterator iterator = fromIterator;
+		Expression selectCondition = null;
 		
 		if (Main.inserts.containsKey(fromTable.getName())) {
 			List<RAIterator> iterators = new ArrayList<RAIterator>();
@@ -205,9 +210,36 @@ public class QueryEvaluator {
 			iterators.add(new InsertIterator(fromTable));
 			iterator = new UnionIterator(iterators);
 		}
+		
+		if (Main.deletes.containsKey(fromTable.getName())) {
+			List<Expression> deleteConditions = Main.deletes.get(fromTable.getName());
+			
+			if (deleteConditions.size() == 1) {
+				selectCondition = new InverseExpression(deleteConditions.get(0));
+			} else {
+				
+				BinaryExpression exp = new OrExpression();
+				exp.setLeftExpression(deleteConditions.get(0));
+				exp.setRightExpression(deleteConditions.get(1));
+				
+				for (int i = 2; i < deleteConditions.size(); i++) {
+					BinaryExpression be = new OrExpression();
+					be.setLeftExpression(exp);
+					be.setRightExpression(deleteConditions.get(i));
+					exp = be;
+				}
+				
+				selectCondition = new InverseExpression(exp);
+			}
+		}
 
-		if (where == null)
-			return iterator;
+		if (where != null) {
+			BinaryExpression be = new AndExpression();
+			
+			be.setLeftExpression(selectCondition);
+			be.setRightExpression(where);
+			selectCondition = be;
+		}
 
 //		String colName = utils.getOneSideColumnName(where);
 //
@@ -247,7 +279,7 @@ public class QueryEvaluator {
 //				return new LinearIndexIterator(fromTable, where, positions);
 //		}
 		
-		return new SelectIterator(iterator, where);
+		return new SelectIterator(iterator, selectCondition);
 
 		//return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
 	}
