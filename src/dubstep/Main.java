@@ -208,7 +208,7 @@ public class Main {
 	
 	public static void deleteQuery(Delete deleteQuery) {
 		String tableName = deleteQuery.getTable().getName();
-		System.out.println(deleteQuery.getWhere().toString());
+		//System.out.println(deleteQuery.getWhere().toString());
 		
 		if (deletes.containsKey(tableName)) {	
 			deletes.get(tableName).add(deleteQuery.getWhere());

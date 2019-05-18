@@ -1,7 +1,9 @@
 package Iterators;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import Models.Schema;
 import Models.TupleSchema;
 import dubstep.Main;
 import net.sf.jsqlparser.expression.PrimitiveValue;
@@ -49,7 +51,17 @@ public class InsertIterator implements RAIterator{
 	}
 	
 	public void setIteratorSchema() {
-		fromSchema = Main.tableSchemas.get(table.getName());
+		//fromSchema = Main.tableSchemas.get(table.getName());
+		fromSchema = new TupleSchema();
+		Map<String, Schema> schemaByName = Main.tableSchemas.get(table.getName()).schemaByName();
+		
+		for (String name: schemaByName.keySet()) {
+			// Since default columns are referenced as X.A
+			String strippedColName = name.substring(name.lastIndexOf('.') + 1);
+			Schema s = Main.tableSchemas.get(table.getName()).getSchemaByName(name);
+			fromSchema.addTuple(strippedColName, s.getColumnIndex(), s.getDataType());
+			fromSchema.addTuple(name, s.getColumnIndex(), s.getDataType());
+		}
 	}
 
 	@Override
