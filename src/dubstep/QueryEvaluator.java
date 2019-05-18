@@ -232,15 +232,16 @@ public class QueryEvaluator {
 				selectCondition = new InverseExpression(exp);
 			}
 		}
-
-		if (where != null) {
+		
+		if (selectCondition == null) {
+			selectCondition = where;
+		} else if (where != null) {
 			BinaryExpression be = new AndExpression();
 			
 			be.setLeftExpression(selectCondition);
 			be.setRightExpression(where);
 			selectCondition = be;
 		}
-
 //		String colName = utils.getOneSideColumnName(where);
 //
 //		if (Indexer.indexMapping.containsKey(colName)) {
@@ -278,6 +279,8 @@ public class QueryEvaluator {
 //			if (!positions.isEmpty())
 //				return new LinearIndexIterator(fromTable, where, positions);
 //		}
+		if (selectCondition == null)
+			return iterator;
 		
 		return new SelectIterator(iterator, selectCondition);
 
