@@ -80,7 +80,6 @@ public class Optimizer {
 
 			return new SortIterator(optimizeRA(iterator.getRightIterator()), iterator.getOrderByElements());
 		}
-
 		else {
 			return root;
 		}

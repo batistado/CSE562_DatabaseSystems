@@ -18,6 +18,7 @@ import Iterators.FromIterator;
 import Iterators.GroupByIterator;
 import Iterators.InMemoryGroupByIterator;
 import Iterators.IndexIterator;
+import Iterators.InsertIterator;
 import Iterators.LimitIterator;
 import Iterators.LinearIndexIterator;
 import Iterators.ProjectIterator;
@@ -196,9 +197,17 @@ public class QueryEvaluator {
 
 	public RAIterator evaluateFromTable(Table fromTable, Expression where) {
 		FromIterator fromIterator = new FromIterator(fromTable);
+		RAIterator iterator = fromIterator;
+		
+		if (Main.inserts.containsKey(fromTable.getName())) {
+			List<RAIterator> iterators = new ArrayList<RAIterator>();
+			iterators.add(fromIterator);
+			iterators.add(new InsertIterator(fromTable));
+			iterator = new UnionIterator(iterators);
+		}
 
 		if (where == null)
-			return fromIterator;
+			return iterator;
 
 //		String colName = utils.getOneSideColumnName(where);
 //
@@ -238,7 +247,7 @@ public class QueryEvaluator {
 //				return new LinearIndexIterator(fromTable, where, positions);
 //		}
 		
-		return new SelectIterator(fromIterator, where);
+		return new SelectIterator(iterator, where);
 
 		//return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
 	}

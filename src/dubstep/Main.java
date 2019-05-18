@@ -9,6 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +21,9 @@ import Indexes.LinearPrimaryIndex;
 import Iterators.RAIterator;
 import Utils.*;
 import Models.TupleSchema;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
@@ -27,10 +31,12 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
+import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.Select;
 
 public class Main {
 	public static Map<String, TupleSchema> tableSchemas = new HashMap<>();
+	public static Map<String, ArrayList<ArrayList<PrimitiveValue>>> inserts = new HashMap<>();
 	public static boolean isInMemory;
 	public static int sortedRunSize = 2;
 	public static int sortBufferSize = 100000;
@@ -94,6 +100,8 @@ public class Main {
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
+				} else if (queryStatement instanceof Insert) {
+					insertQuery((Insert) queryStatement);
 				}
 				System.out.println("$> ");
 				parser = new CCJSqlParser(System.in);
@@ -162,6 +170,36 @@ public class Main {
 		return ProjectionPushDown.pushDown(resultIterator, new HashSet<String>());
 		//return resultIterator;
 		//return new QueryEvaluator().evaluateQuery(selectQuery);
+	}
+	
+	public static void insertQuery(Insert insertQuery) {
+		String tableName = insertQuery.getTable().getName();
+		PrimitiveValue[] row = new PrimitiveValue[insertQuery.getColumns().size()];
+		List<Expression> values = ((ExpressionList) insertQuery.getItemsList()).getExpressions();
+		
+		
+		int i = 0;
+		for (Column column: insertQuery.getColumns()) {
+			String colName = tableName + "." + column.getColumnName();
+			int index = tableSchemas.get(tableName).getSchemaByName(colName).getColumnIndex();
+			row[index] = (PrimitiveValue) values.get(i);
+			i++;
+		}
+		
+		ArrayList<PrimitiveValue> rowList = new ArrayList<>();
+		
+		for(PrimitiveValue val: row) {
+			rowList.add(val);
+		}
+		
+		
+		if (inserts.containsKey(tableName)) {	
+			inserts.get(tableName).add(rowList);
+		} else {
+			ArrayList<ArrayList<PrimitiveValue>> rows = new ArrayList<>();
+			rows.add(rowList);
+			inserts.put(tableName, rows);
+		}
 	}
 	
 	public static void printer(RAIterator iterator) throws FileNotFoundException, UnsupportedEncodingException {

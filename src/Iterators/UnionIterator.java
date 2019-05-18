@@ -17,6 +17,10 @@ public class UnionIterator implements RAIterator {
 		currentIteratorIndex = 0;
 		//System.gc();
 	}
+	
+	public void pushDownSchema(List<RAIterator> iterators) {
+		this.iterators = iterators;
+	}
 
 	@Override
 	public void resetWhere() {

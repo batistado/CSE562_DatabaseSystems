@@ -6,6 +6,7 @@ import Iterators.*;
 import Iterators.RAIterator;
 import Models.Schema;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
@@ -38,12 +39,31 @@ public class ProjectionPushDown {
 				}
 			}
 			
-			for (String colName:iteratorSpecificNames) {
-				columnNames.remove(colName);
-			}
+//			for (String colName:iteratorSpecificNames) {
+//				columnNames.remove(colName);
+//			}
 			
 			return new TableIterator(iterator.getTable(), iteratorSpecificNames);
-		} else if (root instanceof SelectIterator) {
+		} else if (root instanceof InsertIterator) {
+			InsertIterator iterator = (InsertIterator) root;
+			
+			Map<String, Schema> schemaByName = iterator.getIteratorSchema().schemaByName();
+			List<SelectItem> selectItems = new ArrayList<SelectItem>();
+			
+			for (String colName: columnNames) {
+				if (schemaByName.containsKey(colName)) {
+					SelectExpressionItem expressionItem = new SelectExpressionItem();
+					Column column = new Column();
+					column.setColumnName(colName.substring(colName.lastIndexOf('.') + 1));
+					column.setTable(iterator.getTable());
+					expressionItem.setExpression(column);
+					selectItems.add(expressionItem);
+				}
+			}
+			
+			return new ProjectIterator(iterator, selectItems);
+		}  
+		else if (root instanceof SelectIterator) {
 			SelectIterator iterator = (SelectIterator) root;
 			Expression expression = iterator.getExpression();
 			utils.getColumnNamesFromExpression(expression, columnNames);
@@ -67,6 +87,16 @@ public class ProjectionPushDown {
 			RAIterator rightResultIterator = pushDown(iterator.getRightIterator(), columnNames);
 			iterator.pushDownSchema(rightResultIterator);
 			return iterator;
+		} else if (root instanceof UnionIterator) {
+			UnionIterator unionIterator = (UnionIterator) root;
+			
+			ArrayList<RAIterator> resultIterators = new ArrayList<>();
+			for (RAIterator iterator : unionIterator.getIterators()) {
+				resultIterators.add(pushDown(iterator, columnNames));
+			}
+
+			unionIterator.pushDownSchema(resultIterators);
+			return unionIterator;
 		} else if (root instanceof OnePassHashJoinIterator) {
 			OnePassHashJoinIterator iterator = (OnePassHashJoinIterator) root;
 			Expression expression = iterator.getExpression();
