@@ -28,6 +28,7 @@ import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.InverseExpression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -83,6 +84,12 @@ public class utils {
 				getColumnNamesFromExpression(fExpression, colNames);
 			}
 			}
+		}
+		
+		if (expression instanceof InverseExpression) {
+			InverseExpression invExp = (InverseExpression) expression;
+			
+			getColumnNamesFromExpression(invExp.getExpression(), colNames);
 		}
 		
 	}
