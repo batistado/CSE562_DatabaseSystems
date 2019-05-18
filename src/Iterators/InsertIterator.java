@@ -73,7 +73,7 @@ public class InsertIterator implements RAIterator{
 	@Override
 	public TupleSchema getSelectSchema() {
 		// TODO Auto-generated method stub
-		return null;
+		return fromSchema;
 	}
 
 	@Override
