@@ -198,8 +198,8 @@ public class QueryEvaluator {
 			return evaluateJoins(fromTable, joins, where);
 		}
 	}
-
-	public RAIterator evaluateFromTable(Table fromTable, Expression where) {
+	
+	public RAIterator addChanges(Table fromTable) {
 		FromIterator fromIterator = new FromIterator(fromTable);
 		RAIterator iterator = fromIterator;
 		Expression selectCondition = null;
@@ -236,6 +236,48 @@ public class QueryEvaluator {
 		if (selectCondition != null) {
 			iterator = new SelectIterator(iterator, selectCondition);
 		}
+		
+		return iterator;
+	}
+
+	public RAIterator evaluateFromTable(Table fromTable, Expression where) {
+		RAIterator iterator = addChanges(fromTable);
+//		FromIterator fromIterator = new FromIterator(fromTable);
+//		RAIterator iterator = fromIterator;
+//		Expression selectCondition = null;
+//		
+//		if (Main.inserts.containsKey(fromTable.getName())) {
+//			List<RAIterator> iterators = new ArrayList<RAIterator>();
+//			iterators.add(fromIterator);
+//			iterators.add(new InsertIterator(fromTable));
+//			iterator = new UnionIterator(iterators);
+//		}
+//		
+//		if (Main.deletes.containsKey(fromTable.getName())) {
+//			List<Expression> deleteConditions = Main.deletes.get(fromTable.getName());
+//			
+//			if (deleteConditions.size() == 1) {
+//				selectCondition = new InverseExpression(deleteConditions.get(0));
+//			} else {
+//				
+//				BinaryExpression exp = new OrExpression();
+//				exp.setLeftExpression(deleteConditions.get(0));
+//				exp.setRightExpression(deleteConditions.get(1));
+//				
+//				for (int i = 2; i < deleteConditions.size(); i++) {
+//					BinaryExpression be = new OrExpression();
+//					be.setLeftExpression(exp);
+//					be.setRightExpression(deleteConditions.get(i));
+//					exp = be;
+//				}
+//				
+//				selectCondition = new InverseExpression(exp);
+//			}
+//		}
+//		
+//		if (selectCondition != null) {
+//			iterator = new SelectIterator(iterator, selectCondition);
+//		}
 //		String colName = utils.getOneSideColumnName(where);
 //
 //		if (Indexer.indexMapping.containsKey(colName)) {
@@ -304,10 +346,10 @@ public class QueryEvaluator {
 //			}
 //		});
 
-		RAIterator leftIterator = new FromIterator(fromTable);
+		RAIterator leftIterator = addChanges(fromTable);
 		for (Join join : joins) {
 			Table leftTable = (Table) join.getRightItem();
-			leftIterator = new CrossProductIterator(leftIterator, new FromIterator(leftTable));
+			leftIterator = new CrossProductIterator(leftIterator, addChanges(leftTable));
 		}
 
 		return filter == null ? leftIterator : new SelectIterator(leftIterator, filter);
