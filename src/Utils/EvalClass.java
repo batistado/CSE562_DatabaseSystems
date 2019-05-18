@@ -64,10 +64,14 @@ public class EvalClass extends Eval {
 			return this.eval(expression).toBool();
 		} catch (InvalidPrimitive e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println(expression.toString());
+			System.out.println(row.toString());
+			System.out.println(tupleSchema.toString());
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println(expression.toString());
+			System.out.println(row.toString());
+			System.out.println(tupleSchema.toString());
 		}
 		return false;
 	}
