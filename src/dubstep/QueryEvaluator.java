@@ -233,14 +233,8 @@ public class QueryEvaluator {
 			}
 		}
 		
-		if (selectCondition == null) {
-			selectCondition = where;
-		} else if (where != null) {
-			BinaryExpression be = new AndExpression();
-			
-			be.setLeftExpression(selectCondition);
-			be.setRightExpression(where);
-			selectCondition = be;
+		if (selectCondition != null) {
+			iterator = new SelectIterator(iterator, selectCondition);
 		}
 //		String colName = utils.getOneSideColumnName(where);
 //
@@ -279,10 +273,10 @@ public class QueryEvaluator {
 //			if (!positions.isEmpty())
 //				return new LinearIndexIterator(fromTable, where, positions);
 //		}
-		if (selectCondition == null)
+		if (where == null)
 			return iterator;
 		
-		return new SelectIterator(iterator, selectCondition);
+		return new SelectIterator(iterator, where);
 
 		//return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
 	}
