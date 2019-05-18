@@ -61,6 +61,9 @@ public class ProjectionPushDown {
 				}
 			}
 			
+			if (selectItems.isEmpty())
+				return iterator;
+			
 			return new ProjectIterator(iterator, selectItems);
 		}  
 		else if (root instanceof SelectIterator) {
