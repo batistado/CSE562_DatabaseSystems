@@ -65,11 +65,9 @@ public class EvalClass extends Eval {
 		} catch (InvalidPrimitive e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Invalid expression " + expression.toString());
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.out.println("Invalid expression " + expression.toString());
 		}
 		return false;
 	}

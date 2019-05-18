@@ -326,26 +326,6 @@ public class QueryEvaluator {
 	
 
 	public RAIterator evaluateJoins(Table fromTable, List<Join> joins, Expression filter) {
-//		Join firstJoin = new Join();
-//		firstJoin.setRightItem(fromTable);
-//		firstJoin.setSimple(true);
-//
-//		joins.add(firstJoin);
-//
-//		Collections.sort(joins, new Comparator<Join>() {
-//			@Override
-//			public int compare(Join o1, Join o2) {
-//				// TODO Auto-generated method stub
-//				String table1 = ((Table) o1.getRightItem()).getName();
-//				String table2 = ((Table) o2.getRightItem()).getName();
-//
-//				Integer left = Indexer.tableSizeMapping.get(table1);
-//				Integer right = Indexer.tableSizeMapping.get(table2);
-//
-//				return left.compareTo(right);
-//			}
-//		});
-
 		RAIterator leftIterator = addChanges(fromTable);
 		for (Join join : joins) {
 			Table leftTable = (Table) join.getRightItem();
@@ -353,39 +333,6 @@ public class QueryEvaluator {
 		}
 
 		return filter == null ? leftIterator : new SelectIterator(leftIterator, filter);
-
-//		Join firstJoin = new Join();
-//		firstJoin.setRightItem(fromTable);
-//		firstJoin.setSimple(true);
-//
-//		joins.add(firstJoin);
-//
-//		Collections.sort(joins, new Comparator<Join>() {
-//			@Override
-//			public int compare(Join o1, Join o2) {
-//				// TODO Auto-generated method stub
-//				String table1 = ((Table) o1.getRightItem()).getName();
-//				String table2 = ((Table) o2.getRightItem()).getName();
-//
-//				Integer left = Indexer.tableSizeMapping.get(table1);
-//				Integer right = Indexer.tableSizeMapping.get(table2);
-//
-//				return left.compareTo(right);
-//			}
-//		});
-//
-//		RAIterator leftIterator = null;
-//		for (Join join : joins) {
-//			Table leftTable = (Table) join.getRightItem();
-//
-//			if (leftIterator == null) {
-//				leftIterator = new FromIterator(leftTable);
-//			} else {
-//				leftIterator = new CrossProductIterator(leftIterator, new FromIterator(leftTable));
-//			}
-//		}
-//
-//		return filter == null ? leftIterator : new SelectIterator(leftIterator, filter);
 	}
 
 	public RAIterator evaluateQuery(Select selectQuery) {
