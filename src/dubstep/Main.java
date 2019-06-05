@@ -55,16 +55,6 @@ public class Main {
 	        }
 		}
 		
-//		Indexer.tableSizeMapping.put("LINEITEM", 6001215);
-//		Indexer.tableSizeMapping.put("ORDERS", 1500000);
-//		Indexer.tableSizeMapping.put("CUSTOMER", 150000);
-//		Indexer.tableSizeMapping.put("REGION", 5);
-//		Indexer.tableSizeMapping.put("NATION", 25);
-//		Indexer.tableSizeMapping.put("SUPPLIER", 10000);
-//		Indexer.tableSizeMapping.put("PART", 200000);
-//		Indexer.tableSizeMapping.put("PARTSUPP", 800000);
-		//10000
-		
 		
 		
 		// Check and make a temp dir
@@ -78,12 +68,6 @@ public class Main {
  	    if (!directory.exists()){
  	        directory.mkdir();
  	    }
-// 	    
-// 	    // Check and make a Secondary Index dir
-// 		directory = new File(RAIterator.TEMP_DIR + "SecondaryIndexes/");
-// 	    if (!directory.exists()){
-// 	        directory.mkdir();
-// 	    }
 		
 		CCJSqlParser parser;
 		
@@ -93,12 +77,9 @@ public class Main {
 		try {
 			while ((queryStatement = parser.Statement()) != null) {
 				if (queryStatement instanceof Select) {
-//					long startTime = System.nanoTime();
 					Select selectQuery = (Select) queryStatement;
 					RAIterator queryIterator = evaluateQuery(selectQuery);
 					printer(queryIterator);
-//					long endTime = System.nanoTime();
-//					System.out.println("Query time: " + (endTime - startTime) * 1.0/1000000000);
 				}
 				else if (queryStatement instanceof CreateTable) {
 					createTable((CreateTable) queryStatement);
@@ -148,16 +129,9 @@ public class Main {
 	public static RAIterator evaluateQuery(Select selectQuery) {
 		if (Main.tableSchemas.isEmpty()) {
 			try {
-//				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Index.csv"));
-//				Indexer.indexMapping = (Map<String, LinearPrimaryIndex>) ois.readObject();
-//				ois.close();
-				
 				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(RAIterator.TEMP_DIR + "Schema.csv"));
 				tableSchemas = (Map<String, TupleSchema>) ois.readObject();
 				ois.close();
-				
-				//Indexer.loadIndex();
-				//Indexer.loadSecondaryIndex();
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -172,8 +146,6 @@ public class Main {
 		RAIterator iterator = new QueryEvaluator().evaluateQuery(selectQuery);
 		RAIterator resultIterator = new Optimizer().optimizeRA(iterator);
 		return ProjectionPushDown.pushDown(resultIterator, new HashSet<String>());
-		//return resultIterator;
-		//return new QueryEvaluator().evaluateQuery(selectQuery);
 	}
 	
 	public static void insertQuery(Insert insertQuery) {
@@ -208,7 +180,6 @@ public class Main {
 	
 	public static void deleteQuery(Delete deleteQuery) {
 		String tableName = deleteQuery.getTable().getName();
-		//System.out.println(deleteQuery.getWhere().toString());
 		
 		if (deletes.containsKey(tableName)) {	
 			deletes.get(tableName).add(deleteQuery.getWhere());

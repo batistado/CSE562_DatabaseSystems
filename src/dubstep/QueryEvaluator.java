@@ -82,8 +82,6 @@ public class QueryEvaluator {
 			else
 				aggIterator = new InMemoryGroupByIterator(iterator,
 						plainSelect.getSelectItems());
-			// RAIterator aggIterator = new AggregationIterator(new
-			// GroupByIterator(iterator, groupByColumns), plainSelect.getSelectItems());
 
 			return plainSelect.getHaving() == null ? aggIterator
 					: new SelectIterator(aggIterator, plainSelect.getHaving());
@@ -114,7 +112,6 @@ public class QueryEvaluator {
 			return iterator;
 
 		return new SortIterator(iterator, orderByElements);
-		// return new SortIterator(iterator, orderByElements);
 	}
 
 	public RAIterator evaluateSubQuery(PlainSelect selectQuery) {
@@ -242,85 +239,10 @@ public class QueryEvaluator {
 
 	public RAIterator evaluateFromTable(Table fromTable, Expression where) {
 		RAIterator iterator = addChanges(fromTable);
-//		FromIterator fromIterator = new FromIterator(fromTable);
-//		RAIterator iterator = fromIterator;
-//		Expression selectCondition = null;
-//		
-//		if (Main.inserts.containsKey(fromTable.getName())) {
-//			List<RAIterator> iterators = new ArrayList<RAIterator>();
-//			iterators.add(fromIterator);
-//			iterators.add(new InsertIterator(fromTable));
-//			iterator = new UnionIterator(iterators);
-//		}
-//		
-//		if (Main.deletes.containsKey(fromTable.getName())) {
-//			List<Expression> deleteConditions = Main.deletes.get(fromTable.getName());
-//			
-//			if (deleteConditions.size() == 1) {
-//				selectCondition = new InverseExpression(deleteConditions.get(0));
-//			} else {
-//				
-//				BinaryExpression exp = new OrExpression();
-//				exp.setLeftExpression(deleteConditions.get(0));
-//				exp.setRightExpression(deleteConditions.get(1));
-//				
-//				for (int i = 2; i < deleteConditions.size(); i++) {
-//					BinaryExpression be = new OrExpression();
-//					be.setLeftExpression(exp);
-//					be.setRightExpression(deleteConditions.get(i));
-//					exp = be;
-//				}
-//				
-//				selectCondition = new InverseExpression(exp);
-//			}
-//		}
-//		
-//		if (selectCondition != null) {
-//			iterator = new SelectIterator(iterator, selectCondition);
-//		}
-//		String colName = utils.getOneSideColumnName(where);
-//
-//		if (Indexer.indexMapping.containsKey(colName)) {
-//			List<Position> positions = new ArrayList<Position>();
-//
-//			LinearPrimaryIndex tree = Indexer.indexMapping.get(colName);
-//
-//			List<TreeSearch> treeSearchObjects = utils.getSearchObject(where);
-//
-//			if (treeSearchObjects == null) {
-//				return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
-//			}
-////				return new SelectIterator(fromIterator, where);
-//
-//			Position searchObject;
-//			for (TreeSearch treeSearchObject : treeSearchObjects) {
-//				if (treeSearchObject.operation.equals("EQUALS")) {
-//					searchObject = tree.search(treeSearchObject.leftValue);
-//
-//					if (searchObject != null) {
-//						positions.add(searchObject);
-//					}
-//
-//				} else {
-//					searchObject = tree.searchRange(treeSearchObject.leftValue, treeSearchObject.leftPolicy,
-//							treeSearchObject.rightValue, treeSearchObject.rightPolicy);
-//
-//					if (searchObject != null) {
-//						positions.add(searchObject);
-//					}
-//
-//				}
-//			}
-//
-//			if (!positions.isEmpty())
-//				return new LinearIndexIterator(fromTable, where, positions);
-//		}
 		if (where == null)
 			return iterator;
 		
 		return new SelectIterator(iterator, where);
-
-		//return utils.checkAndAddSecondaryIndex(colName, where, fromIterator, fromTable);
 	}
 	
 	
